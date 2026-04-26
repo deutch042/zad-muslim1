@@ -29,10 +29,11 @@ import {
 } from 'lucide-react';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSettingsStore } from '@/store/settings-store';
-import { TRANSLATIONS, RECITERS, PRAYER_METHODS, MADHAB_OPTIONS, ADHAN_SOUNDS, SALAWAT_INTERVALS } from '@/lib/constants';
+import { TRANSLATIONS, RECITERS, PRAYER_METHODS, MADHAB_OPTIONS, ADHAN_SOUNDS, SALAWAT_SOUNDS, SALAWAT_INTERVALS } from '@/lib/constants';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useAdhanPlayer } from '@/hooks/useAdhanPlayer';
+import { useSalawatPlayer } from '@/hooks/useSalawatPlayer';
 
 // Popular Egyptian cities
 const POPULAR_CITIES = [
@@ -227,13 +228,14 @@ function ToggleSwitch({
 export default function SettingsPage({ onBack }: { onBack?: () => void }) {
   const { 
     language, theme, prayerMethod, madhab, reciterId, quranFontSize, 
-    salawatEnabled, salawatInterval, prayerReminderEnabled, prayerReminderMinutes, 
+    salawatEnabled, salawatSound, salawatInterval, prayerReminderEnabled, prayerReminderMinutes, 
     adhanEnabled, adhanSound, updateSettings, resetSettings, locationName, setLocation
   } = useSettingsStore();
 
   const { subscribed, loading: pushLoading, subscribe, unsubscribe, updateSubscription } = usePushNotifications();
   const { requestLocation, isLoading: geoLoading, error: geoError } = useGeolocation();
   const { playAdhanPreview, pauseAdhan, isPlaying: adhanIsPlaying } = useAdhanPlayer();
+  const { playSalawatPreview, pauseSalawat, isPlaying: salawatIsPlaying } = useSalawatPlayer();
 
   const [searchCity, setSearchCity] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -798,7 +800,43 @@ export default function SettingsPage({ onBack }: { onBack?: () => void }) {
                     />
                   </SettingCard>
 
-                  {/* Salawat Interval Selector - shown only when enabled */}
+                  {/* Salawat Sound Selector - shown only when enabled */}
+                  {salawatEnabled && (
+                    <SettingCard index={7.5} lang={language}>
+                      <div className={`flex items-center gap-3 ${isAr ? 'flex-row-reverse' : ''}`}>
+                        <div className="w-10 h-10 rounded-xl bg-zad-gold/15 border border-zad-gold/30 flex items-center justify-center">
+                          <Headphones className="w-5 h-5 text-zad-gold" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-text-primary">{isAr ? 'اختر نوع الصلاة' : 'Choose Salawat'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => salawatIsPlaying ? pauseSalawat() : playSalawatPreview(salawatSound)}
+                          className={`w-9 h-9 rounded-lg border flex items-center justify-center transition-all ${
+                            salawatIsPlaying
+                              ? 'bg-zad-gold/20 border-zad-gold text-zad-gold'
+                              : 'bg-zad-surface border-zad-border/60 text-text-secondary hover:border-zad-gold/40 hover:text-zad-gold'
+                          }`}
+                        >
+                          {salawatIsPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        </button>
+                        <SelectionDrawer
+                          label={isAr ? 'اختر الصوت' : 'Choose Sound'}
+                          value={salawatSound}
+                          options={SALAWAT_SOUNDS}
+                          lang={language}
+                          onSelect={(v) => {
+                            const key = v as string;
+                            updateSettings({ salawatSound: key });
+                            pauseSalawat();
+                            playSalawatPreview(key);
+                          }}
+                        />
+                      </div>
+                    </SettingCard>
+                  )}
                   {salawatEnabled && (
                     <SettingCard index={8} lang={language}>
                       <div className={`flex items-center gap-3 ${isAr ? 'flex-row-reverse' : ''}`}>
