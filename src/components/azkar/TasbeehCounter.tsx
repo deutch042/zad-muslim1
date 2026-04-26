@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, RotateCcw } from 'lucide-react';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS, TASBIEH_PHRASES } from '@/lib/constants';
+import type { TranslationStrings } from '@/types';
 
 interface TasbeehCounterProps {
   onBack: () => void;
@@ -17,7 +18,7 @@ export function TasbeehCounter({ onBack }: TasbeehCounterProps) {
   const [rounds, setRounds] = useState(0);
   const [showPhrasePicker, setShowPhrasePicker] = useState(false);
   const language = useSettingsStore((s) => s.language);
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS[language] as TranslationStrings;
   const isRtl = language === 'ar';
 
   const currentPhrase = TASBIEH_PHRASES[phraseIndex];
@@ -145,15 +146,15 @@ export function TasbeehCounter({ onBack }: TasbeehCounterProps) {
         onClick={tap}
         className="h-20 w-20 rounded-full border-2 border-zad-gold/40 bg-zad-gold/10 text-sm font-medium text-zad-gold shadow-lg shadow-zad-gold/10 transition-all hover:border-zad-gold/60 hover:bg-zad-gold/20 active:scale-95"
       >
-        {(t as any).tapToCount || (isRtl ? 'اضغط للبدء' : 'Tap to count')}
+        {t.tapToCount || (isRtl ? 'اضغط للبدء' : 'Tap to count')}
       </motion.button>
 
       {/* Target selector + rounds */}
       <div className="flex items-center gap-4 text-xs text-text-muted">
-        <span>{(t as any).rounds || (isRtl ? 'الأشواط' : 'Rounds')}: {rounds}</span>
+        <span>{t.rounds || (isRtl ? 'الأشواط' : 'Rounds')}: {rounds}</span>
         <span>|</span>
         <div className="flex items-center gap-1">
-          <span>{(t as any).target || (isRtl ? 'الهدف' : 'Target')}:</span>
+          <span>{t.target || (isRtl ? 'الهدف' : 'Target')}:</span>
           {[33, 99, 100].map((targetVal) => (
             <button
               key={targetVal}

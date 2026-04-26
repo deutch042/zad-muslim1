@@ -23,6 +23,7 @@ import { useAppStore } from '@/store/app-store';
 import { useQuranAudio } from './useQuranAudio';
 import { ReciterSelector } from './ReciterSelector';
 import { TRANSLATIONS, RECITERS } from '@/lib/constants';
+import type { TranslationStrings } from '@/types';
 import { useQuranCache } from '@/store/quran-cache-store';
 
 interface PageAyahData {
@@ -111,7 +112,7 @@ export function MushafView() {
   const reciterId = useSettingsStore((s) => s.reciterId);
   const language = useSettingsStore((s) => s.language);
   const quranFontSize = useSettingsStore((s) => s.quranFontSize);
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS[language] as TranslationStrings;
 
   // Compute dynamic font size from settings (slider: 18–48)
   // Map slider value → rem: 18→0.95, 28→1.4, 48→2.4
@@ -516,11 +517,11 @@ export function MushafView() {
               >
                 <BookOpen size={14} className="text-amber-400" />
                 <span className="text-amber-100">
-                  {(t as any).page || (language === 'ar' ? 'صفحة' : 'Page')} {currentPage} {(t as any).of || (language === 'ar' ? 'من' : 'of')} 604
+                  {t.page || (language === 'ar' ? 'صفحة' : 'Page')} {currentPage} {t.of || (language === 'ar' ? 'من' : 'of')} 604
                 </span>
                 {currentJuz && (
                   <span className="rounded-lg bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-400">
-                    {(t as any).juz || (language === 'ar' ? 'جزء' : 'Juz')} {currentJuz}
+                    {t.juz || (language === 'ar' ? 'جزء' : 'Juz')} {currentJuz}
                   </span>
                 )}
               </button>

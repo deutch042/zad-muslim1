@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
+import type { TranslationStrings } from '@/types';
 
 interface LocationPromptProps {
   error?: string | null;
@@ -33,7 +34,7 @@ export function LocationPrompt({ error, onRetry }: LocationPromptProps) {
   const [noResults, setNoResults] = useState(false);
   const setLocation = useSettingsStore((s) => s.setLocation);
   const language = useSettingsStore((s) => s.language);
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS[language] as TranslationStrings;
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load location history on mount
@@ -117,7 +118,7 @@ export function LocationPrompt({ error, onRetry }: LocationPromptProps) {
   return (
     <div className="space-y-4 rounded-xl border border-zad-border bg-zad-surface p-6 text-center">
       <MapPin size={32} className="mx-auto text-zad-gold" />
-      <p className="text-sm text-text-secondary">{error || (t as any).locationDenied || (language === 'ar' ? 'تم رفض الوصول للموقع' : 'Location access denied')}</p>
+      <p className="text-sm text-text-secondary">{error || t.locationDenied || (language === 'ar' ? 'تم رفض الوصول للموقع' : 'Location access denied')}</p>
 
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -126,7 +127,7 @@ export function LocationPrompt({ error, onRetry }: LocationPromptProps) {
             onChange={(e) => handleQueryChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && searchCity(query)}
             onFocus={() => setShowHistory(query.length === 0 && locationHistory.length > 0)}
-            placeholder={(t as any).selectCity || (language === 'ar' ? 'ابحث عن مدينتك...' : 'Search for your city...')}
+            placeholder={t.selectCity || (language === 'ar' ? 'ابحث عن مدينتك...' : 'Search for your city...')}
             className="border-zad-border bg-zad-midnight text-text-primary placeholder:text-text-muted pr-8"
           />
           {query && (
@@ -222,7 +223,7 @@ export function LocationPrompt({ error, onRetry }: LocationPromptProps) {
           variant="ghost"
           className="text-text-muted hover:text-text-secondary"
         >
-          {(t as any).retry || (language === 'ar' ? 'إعادة المحاولة' : 'Retry')}
+          {t.retry || (language === 'ar' ? 'إعادة المحاولة' : 'Retry')}
         </Button>
       )}
     </div>

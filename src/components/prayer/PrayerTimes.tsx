@@ -18,7 +18,7 @@ const ICON_MAP: Record<string, any> = {
 };
 
 export function PrayerTimes() {
-  const { timings, nextPrayer, isLoading } = usePrayerTimes();
+  const { timings, nextPrayer, isLoading, error, refetch } = usePrayerTimes();
   const language = useSettingsStore((s) => s.language);
   const t = TRANSLATIONS[language];
 
@@ -52,6 +52,12 @@ export function PrayerTimes() {
           <p className="mt-1 text-xs text-text-muted">
             {language === 'ar' ? 'يرجى التحقق من اتصال الإنترنت وإعدادات الموقع' : 'Please check your connection and location settings'}
           </p>
+          <button
+            onClick={() => refetch()}
+            className="mt-4 rounded-lg bg-zad-gold px-4 py-2 text-sm font-medium text-white hover:bg-zad-gold/90"
+          >
+            {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+          </button>
         </motion.div>
       </div>
     );

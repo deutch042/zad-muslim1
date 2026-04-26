@@ -4,6 +4,15 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore } from '@/store/settings-store';
 
+// Type extensions for device orientation
+declare global {
+  interface Window {
+    DeviceOrientationEvent?: {
+      requestPermission?: () => Promise<'granted' | 'denied'>;
+    };
+  }
+}
+
 // ─── Kaaba Coordinates ────────────────────────────────────────────
 const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
@@ -101,11 +110,20 @@ interface DeviceOrientationState {
   permissionStatus: 'idle' | 'requesting' | 'granted' | 'denied';
 }
 
+// Type extensions for device orientation
+declare global {
+  interface Window {
+    DeviceOrientationEvent?: {
+      requestPermission?: () => Promise<'granted' | 'denied'>;
+    };
+  }
+}
+
 function useDeviceOrientation() {
   const isIOS13 = useMemo(() => {
-    if (typeof window === 'undefined' || typeof (window as any).DeviceOrientationEvent === 'undefined') return false;
-    const DOE = (window as any).DeviceOrientationEvent as any;
-    return typeof DOE.requestPermission === 'function';
+    if (typeof window === 'undefined' || typeof window.DeviceOrientationEvent === 'undefined') return false;
+    const DOE = window.DeviceOrientationEvent;
+    return typeof DOE?.requestPermission === 'function';
   }, []);
 
   const [state, setState] = useState<DeviceOrientationState>({
@@ -114,17 +132,18 @@ function useDeviceOrientation() {
     permissionStatus: 'idle',
   });
 
-  const handleOrientation = useCallback((event: any) => {
+  const handleOrientation = useCallback((event: Event) => {
     let newHeading: number | null = null;
+    const e = event as unknown as { webkitCompassHeading?: number; alpha?: number | null };
     
     // iOS
-    if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
-      newHeading = event.webkitCompassHeading;
+    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+      newHeading = e.webkitCompassHeading;
     } 
     // Android
-    else if (event.alpha !== null) {
+    else if (e.alpha !== null && e.alpha !== undefined) {
       // alpha is 0 when pointing North, increases counter-clockwise (West=90). We want clockwise heading.
-      newHeading = 360 - event.alpha;
+      newHeading = 360 - e.alpha;
     }
 
     if (newHeading !== null) {
@@ -138,7 +157,7 @@ function useDeviceOrientation() {
 
   const requestPermission = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    const DOE = (window as any).DeviceOrientationEvent as any;
+    const DOE = window.DeviceOrientationEvent;
 
     if (DOE && typeof DOE.requestPermission === 'function') {
       try {
@@ -146,7 +165,7 @@ function useDeviceOrientation() {
         const response = await DOE.requestPermission();
         if (response === 'granted') {
           setState((prev) => ({ ...prev, permissionStatus: 'granted' }));
-          window.addEventListener('deviceorientation', handleOrientation);
+          window.addEventListener('deviceorientation' as unknown as string, handleOrientation);
         } else {
           setState((prev) => ({ ...prev, permissionStatus: 'denied' }));
         }
@@ -154,7 +173,7 @@ function useDeviceOrientation() {
         setState((prev) => ({ ...prev, permissionStatus: 'denied' }));
       }
     } else {
-      window.addEventListener('deviceorientation', handleOrientation);
+      window.addEventListener('deviceorientation' as unknown as string, handleOrientation);
     }
   }, [handleOrientation]);
 
@@ -163,16 +182,16 @@ function useDeviceOrientation() {
     
     // Listen to absolute if possible (Android)
     if ('ondeviceorientationabsolute' in window) {
-      (window as any).addEventListener('deviceorientationabsolute', handleOrientation);
+      window.addEventListener('deviceorientationabsolute' as unknown as string, handleOrientation);
     } else {
-      (window as any).addEventListener('deviceorientation', handleOrientation);
+      window.addEventListener('deviceorientation' as unknown as string, handleOrientation);
     }
 
     return () => {
       if ('ondeviceorientationabsolute' in window) {
-        (window as any).removeEventListener('deviceorientationabsolute', handleOrientation);
+        window.removeEventListener('deviceorientationabsolute' as unknown as string, handleOrientation);
       } else {
-        (window as any).removeEventListener('deviceorientation', handleOrientation);
+        window.removeEventListener('deviceorientation' as unknown as string, handleOrientation);
       }
     };
   }, [handleOrientation, isIOS13]);

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
+import type { TranslationStrings } from '@/types';
 import { AzkarList } from './AzkarList';
 import { TasbeehCounter } from './TasbeehCounter';
 
@@ -173,7 +174,7 @@ export function AzkarCategories() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showTasbeeh, setShowTasbeeh] = useState(false);
   const language = useSettingsStore((s) => s.language);
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS[language] as TranslationStrings;
 
   if (showTasbeeh) {
     return <TasbeehCounter onBack={() => setShowTasbeeh(false)} />;
@@ -191,8 +192,8 @@ export function AzkarCategories() {
         onClick={() => setShowTasbeeh(true)}
         className="w-full rounded-xl border border-zad-gold/30 bg-gradient-to-l from-zad-gold/10 to-zad-surface p-4 text-center transition-all hover:border-zad-gold/50"
       >
-        <p className="gold-text arabic-display text-lg font-bold">{(t as any).tasbeeh || (language === 'ar' ? 'المسبحة الإلكترونية' : 'Digital Tasbeeh')}</p>
-        <p className="mt-1 text-xs text-text-muted">{(t as any).tapToCount || (language === 'ar' ? 'اضغط للبدء' : 'Tap to count')}</p>
+        <p className="gold-text arabic-display text-lg font-bold">{t.tasbeeh || (language === 'ar' ? 'المسبحة الإلكترونية' : 'Digital Tasbeeh')}</p>
+        <p className="mt-1 text-xs text-text-muted">{t.tapToCount || (language === 'ar' ? 'اضغط للبدء' : 'Tap to count')}</p>
       </motion.button>
 
       {/* Categories Grid */}

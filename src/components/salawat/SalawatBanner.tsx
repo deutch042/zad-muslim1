@@ -6,15 +6,29 @@ import { Bell, BellOff, Volume2, X } from 'lucide-react';
 import { useSettingsStore } from '@/store/settings-store';
 import { useSalawatTimer } from '@/hooks/useSalawatTimer';
 
+// Extend window to include MSStream check (IE11 detection)
+declare global {
+  interface Window {
+    MSStream?: unknown;
+  }
+}
+
+// Extend navigator to include standalone property (PWA detection)
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
+}
+
 // iOS Detection Utilities
 function isIOS() {
   if (typeof window === 'undefined') return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
 function isIOSPWA() {
   if (typeof window === 'undefined') return false;
-  return (navigator as any).standalone === true;
+  return navigator.standalone === true;
 }
 
 

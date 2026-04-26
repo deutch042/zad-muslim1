@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
+import type { TranslationStrings } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface DailyHadith {
@@ -218,7 +219,7 @@ export function HadithView() {
   const [copied, setCopied] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const language = useSettingsStore((s) => s.language);
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS[language] as TranslationStrings;
   const isRtl = language === 'ar';
 
   const { data, isLoading, isError, refetch } = useQuery<HadithData>({
@@ -236,8 +237,8 @@ export function HadithView() {
     const lines = [daily.textAr];
     if (daily.textEn) lines.push(daily.textEn);
     lines.push(`— ${daily.narrator}`);
-    lines.push(`${(t as any).source || (language === 'ar' ? 'المصدر' : 'Source')}: ${daily.source}`);
-    lines.push(`${(t as any).grade || (language === 'ar' ? 'الحكم' : 'Grade')}: ${daily.grade}`);
+    lines.push(`${t.source}: ${daily.source}`);
+    lines.push(`${t.grade}: ${daily.grade}`);
     lines.push('\n📱 ' + (language === 'ar' ? 'تطبيق زاد مسلم' : 'Zad Muslim App'));
     return lines.join('\n');
   };
@@ -258,7 +259,7 @@ export function HadithView() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: (t as any).hadithToday || (language === 'ar' ? 'حديث اليوم' : 'Hadith of the Day'),
+          title: t.hadithToday,
           text,
         });
       } catch (err) {
@@ -277,14 +278,14 @@ export function HadithView() {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-4">
         <BookOpen className="h-12 w-12 text-text-muted" />
-        <p className="text-sm text-text-muted">{(t as any).error || (language === 'ar' ? 'فشل تحميل الحديث' : 'Failed to load Hadith')}</p>
+        <p className="text-sm text-text-muted">{t.error}</p>
         <Button
           variant="outline"
           size="sm"
           onClick={() => refetch()}
           className="border-zad-border text-text-secondary hover:bg-zad-surface"
         >
-          {(t as any).retry || (language === 'ar' ? 'إعادة المحاولة' : 'Retry')}
+          {t.retry}
         </Button>
       </div>
     );
@@ -340,7 +341,7 @@ export function HadithView() {
             <div className="mb-4 flex items-center justify-center gap-2">
               <Sparkles size={14} className="text-zad-gold/70" />
               <h2 className="gold-text text-sm font-semibold tracking-wide">
-                {(t as any).hadithToday || (language === 'ar' ? 'حديث اليوم' : 'Hadith of the Day')}
+                {t.hadithToday}
               </h2>
               <Sparkles size={14} className="text-zad-gold/70" />
             </div>
@@ -382,7 +383,7 @@ export function HadithView() {
                   className="border-zad-gold/20 bg-zad-gold/5 px-2.5 py-1 text-xs text-zad-gold"
                 >
                   <span className="ml-1 text-[10px] text-text-muted">
-                    {(t as any).narrator || (language === 'ar' ? 'الراوي' : 'Narrator')}
+                    {t.narrator}
                   </span>
                   <span dir="rtl" className="arabic-display text-xs">
                     {daily.narrator}
@@ -395,7 +396,7 @@ export function HadithView() {
                   className="border-zad-teal/20 bg-zad-teal/5 px-2.5 py-1 text-xs text-zad-teal"
                 >
                   <span className="ml-1 text-[10px] text-text-muted">
-                    {(t as any).source || (language === 'ar' ? 'المصدر' : 'Source')}
+                    {t.source}
                   </span>
                   <span dir="rtl" className="arabic-display text-xs">
                     {daily.source}
@@ -408,7 +409,7 @@ export function HadithView() {
                   className="border-zad-green/20 bg-zad-green/5 px-2.5 py-1 text-xs text-zad-green"
                 >
                   <span className="ml-1 text-[10px] text-text-muted">
-                    {(t as any).grade || (language === 'ar' ? 'الحكم' : 'Grade')}
+                    {t.grade}
                   </span>
                   <span dir="rtl" className="arabic-display text-xs">
                     {daily.grade}
