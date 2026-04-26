@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   notificationsEnabled: true,
   eyeComfort: false,
   salawatEnabled: true,
+  salawatSound: "default",
   salawatInterval: 15,
   prayerReminderEnabled: true,
   prayerReminderMinutes: 10,
@@ -144,6 +145,10 @@ export const ADHAN_SOUNDS = [
   { value: "rashed", name: "Mishary Rashid", nameAr: "مشاري راشد" },
   { value: "makka", name: "Makkah", nameAr: "مكة المكرمة" },
   { value: "algeria", name: "Algeria", nameAr: "الجزائر" },
+];
+
+export const SALAWAT_SOUNDS = [
+  { value: "default", name: "Salawat - Default", nameAr: "الصيغة الأساسية" },
 ];
 
 export const RECITERS: Reciter[] = [

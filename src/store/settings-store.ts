@@ -47,6 +47,7 @@ export const useSettingsStore = create<SettingsStore>()(
         adhanEnabled: state.adhanEnabled,
         adhanSound: state.adhanSound,
         salawatEnabled: state.salawatEnabled,
+        salawatSound: state.salawatSound,
         salawatInterval: state.salawatInterval,
         prayerReminderEnabled: state.prayerReminderEnabled,
         prayerReminderMinutes: state.prayerReminderMinutes,

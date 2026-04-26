@@ -5,14 +5,15 @@ import { useSettingsStore } from '@/store/settings-store';
 import { isAudioUnlocked } from '@/lib/audio-session';
 
 export function useSalawatTimer() {
-  const { salawatEnabled, salawatInterval, isLoaded } = useSettingsStore();
+  const { salawatEnabled, salawatInterval, salawatSound, isLoaded } = useSettingsStore();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playCount, setPlayCount] = useState(0);
 
   // Create ONE audio element, load it once
   useEffect(() => {
-    const audio = new Audio('/audio/salawat.mp3');
+    const audioPath = `/audio/salawat.mp3`;
+    const audio = new Audio(audioPath);
     audio.volume = 0.8;
     audio.preload = 'auto';
     audioRef.current = audio;
@@ -36,7 +37,7 @@ export function useSalawatTimer() {
       audio.pause();
       audioRef.current = null;
     };
-  }, []);
+  }, [salawatSound]);
 
   // Play function
   const playSalawat = useCallback(() => {
@@ -112,7 +113,7 @@ export function useSalawatTimer() {
         timerRef.current = null;
       }
     };
-  }, [salawatEnabled, salawatInterval, isLoaded, playSalawat]);
+  }, [salawatEnabled, salawatInterval, salawatSound, isLoaded, playSalawat]);
 
   return { playSalawat, playCount };
 }

@@ -173,6 +173,7 @@ export interface UserSettings {
   notificationsEnabled: boolean;
   eyeComfort: boolean;
   salawatEnabled: boolean;
+  salawatSound: string; // salawat_1, salawat_2, salawat_3
   salawatInterval: number; // minutes: 1, 5, 10, 15, 30
   prayerReminderEnabled: boolean;
   prayerReminderMinutes: number; // 5, 10, 15, 20, 30

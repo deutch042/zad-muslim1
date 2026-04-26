@@ -17,63 +17,63 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
+      matcher: ({ url }) => url.href.startsWith('https://fonts.gstatic.com/'),
       handler: new CacheFirst({
         cacheName: "google-fonts-webfonts",
         plugins: [],
       }),
     },
     {
-      urlPattern: /^https:\/\/fonts\.(?:googleapis)\.com\/.*/i,
+      matcher: ({ url }) => url.href.startsWith('https://fonts.googleapis.com/'),
       handler: new CacheFirst({
         cacheName: "google-fonts-stylesheets",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
+      matcher: ({ url }) => /\.(eot|otf|ttc|ttf|woff|woff2|font\.css)$/i.test(url.pathname),
       handler: new CacheFirst({
         cacheName: "static-font-assets",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+      matcher: ({ url }) => /\.(jpg|jpeg|gif|png|svg|ico|webp)$/i.test(url.pathname),
       handler: new CacheFirst({
         cacheName: "static-image-assets",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\/_next\/image\?url=.+$/i,
+      matcher: ({ url }) => url.pathname.startsWith('/_next/image') && url.search.includes('url='),
       handler: new NetworkFirst({
         cacheName: "next-image",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\.(?:mp3|wav|ogg)$/i,
+      matcher: ({ url }) => /\.(mp3|wav|ogg)$/i.test(url.pathname),
       handler: new CacheFirst({
         cacheName: "static-audio-assets",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\.(?:js)$/i,
+      matcher: ({ url }) => url.pathname.endsWith('.js'),
       handler: new NetworkFirst({
         cacheName: "static-js-assets",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\.(?:css|less)$/i,
+      matcher: ({ url }) => /\.(css|less)$/i.test(url.pathname),
       handler: new NetworkFirst({
         cacheName: "static-style-assets",
         plugins: [],
       }),
     },
     {
-      urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
+      matcher: ({ url }) => /^\/_next\/data\/.+\/.+\.json$/i.test(url.pathname),
       handler: new NetworkFirst({
         cacheName: "next-data",
         plugins: [],
