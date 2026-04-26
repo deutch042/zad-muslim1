@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       if (cached) return NextResponse.json(cached);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       try {
         const res = await fetch(
           `${BASE}/calendarByCity/${year}/${month}?latitude=${lat}&longitude=${lng}&method=${method}&school=${school}`,

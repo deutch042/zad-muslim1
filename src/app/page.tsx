@@ -25,6 +25,8 @@ import { PrayerReminderToast } from '@/components/prayer/PrayerReminderToast';
 import { AdhanToast } from '@/components/prayer/AdhanToast';
 import { usePrayerReminder } from '@/hooks/usePrayerReminder';
 import { useAdhanPlayer } from '@/hooks/useAdhanPlayer';
+import { useAudioUnlock } from '@/hooks/useAudioUnlock';
+import { TapToPlayBanner } from '@/components/ui/TapToPlayBanner';
 import { SplashScreen } from '@/components/ui/SplashScreen';
 import SettingsPage from '@/components/settings/SettingsPage';
 
@@ -189,6 +191,7 @@ export default function Page() {
   
   useAdhanPlayer();
   usePrayerReminder();
+  const { needsPrompt, setNeedsPrompt } = useAudioUnlock();
 
   const { hijriDate: headerHijri } = usePrayerTimes();
   const [initialLoading, setInitialLoading] = useState(true);
@@ -256,6 +259,10 @@ export default function Page() {
         </AnimatePresence>
 
         <SalawatBanner />
+        <TapToPlayBanner
+          visible={needsPrompt}
+          onTap={() => setNeedsPrompt(false)}
+        />
         <PrayerReminderToast />
         <AdhanToast />
       </div>

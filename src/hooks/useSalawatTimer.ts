@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSettingsStore } from '@/store/settings-store';
+import { isAudioUnlocked } from '@/lib/audio-session';
 
 export function useSalawatTimer() {
   const { salawatEnabled, salawatInterval, isLoaded } = useSettingsStore();
@@ -42,6 +43,16 @@ export function useSalawatTimer() {
     const audio = audioRef.current;
     if (!audio) {
       console.warn('[SalawatTimer] No audio element');
+      return;
+    }
+
+    const adhanAudio = document.querySelector('audio[src*="adhan"]') as HTMLAudioElement | null;
+    if (adhanAudio && !adhanAudio.paused) {
+      return;
+    }
+
+    if (!isAudioUnlocked()) {
+      window.dispatchEvent(new CustomEvent('audio-unlock-needed'));
       return;
     }
 

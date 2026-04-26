@@ -96,6 +96,7 @@ export interface Hadith {
   textEn?: string;
   grade?: string;
   narrator?: string;
+  source?: string;
 }
 
 // ===== Names of Allah =====
@@ -222,4 +223,64 @@ export type MoreView = "menu" | "hadith" | "salawat" | "settings" | "names" | "q
 export interface QuranView {
   type: "list" | "reader" | "bookmarks" | "search";
   surahNumber?: number;
+}
+
+// ===== Translation Types =====
+export interface TranslationStrings {
+  home: string;
+  quran: string;
+  prayer: string;
+  azkar: string;
+  more: string;
+  fajr: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+  sunrise: string;
+  nextPrayer: string;
+  remaining: string;
+  settings: string;
+  language: string;
+  theme: string;
+  dark: string;
+  light: string;
+  method: string;
+  madhab: string;
+  reciter: string;
+  selectReciter: string;
+  fontSize: string;
+  reset: string;
+  greeting: string;
+  tagline: string;
+  appName: string;
+  noResults: string;
+  back: string;
+  pushNotifications: string;
+  pushSubscribed: string;
+  pushNotSupported: string;
+  pushDescription: string;
+  adhanNotifTitle: string;
+  adhanNotifBody: string;
+  eyeComfort: string;
+  salawatSound: string;
+  salawatInterval: string;
+  salawatIntervalDesc: string;
+  chooseSalawatInterval: string;
+  hadithToday: string;
+  narrator: string;
+  source: string;
+  grade: string;
+  error: string;
+  retry: string;
+  tapToCount?: string;
+  rounds?: string;
+  target?: string;
+  tasbeeh?: string;
+  adhanToastTitle?: string;
+  locationDenied?: string;
+  selectCity?: string;
+  page?: string;
+  of?: string;
+  juz?: string;
 }

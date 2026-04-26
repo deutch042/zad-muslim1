@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { usePrayerTimes } from '@/hooks/usePrayerTimes';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
+import { isAudioUnlocked, getAudioContext } from '@/lib/audio-session';
 
 // Map adhan sound setting to actual audio file path
 const ADHAN_FILES: Record<string, string> = {
@@ -16,7 +17,7 @@ const ADHAN_FILES: Record<string, string> = {
 function playDefaultAdhan() {
   console.log('[AdhanPlayer] Playing default Web Audio adhan');
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioContext();
 
     const playNote = (freq: number, startTime: number, duration: number, vol: number = 0.25) => {
       const osc = ctx.createOscillator();
@@ -35,34 +36,26 @@ function playDefaultAdhan() {
 
     const t = ctx.currentTime;
 
-    // Opening takbeer phrase
     playNote(261.63, t, 0.8, 0.3);
     playNote(329.63, t + 0.6, 0.6, 0.25);
     playNote(392.00, t + 1.0, 0.8, 0.25);
     playNote(523.25, t + 1.6, 1.2, 0.3);
 
-    // Main melodic phrase
     playNote(392.00, t + 3.0, 0.8, 0.25);
     playNote(440.00, t + 3.6, 0.8, 0.25);
     playNote(523.25, t + 4.2, 1.0, 0.28);
     playNote(587.33, t + 5.0, 0.6, 0.22);
     playNote(523.25, t + 5.4, 1.2, 0.28);
 
-    // Second phrase
     playNote(392.00, t + 7.0, 0.8, 0.25);
     playNote(523.25, t + 7.6, 1.2, 0.3);
     playNote(587.33, t + 8.6, 0.6, 0.22);
     playNote(659.25, t + 9.0, 1.5, 0.3);
 
-    // Final resolve
     playNote(523.25, t + 10.8, 0.6, 0.25);
     playNote(587.33, t + 11.2, 0.6, 0.25);
     playNote(523.25, t + 11.6, 2.0, 0.35);
-
-    setTimeout(() => ctx.close(), 15000);
-  } catch {
-    // Audio context not available
-  }
+  } catch {}
 }
 
 const prayerArabic: Record<string, string> = {
@@ -188,8 +181,10 @@ export function useAdhanPlayer() {
       }
     } catch {}
 
-    // 2) Play adhan sound
-    if (currentSound === 'default') {
+    // 2) Play adhan sound (only if audio is unlocked)
+    if (!isAudioUnlocked()) {
+      window.dispatchEvent(new CustomEvent('audio-unlock-needed'));
+    } else if (currentSound === 'default') {
       playDefaultAdhan();
     } else {
       const played = await playAdhanSound(currentSound);
@@ -233,10 +228,12 @@ export function useAdhanPlayer() {
         const prayerTime = new Date();
         prayerTime.setHours(h, m, 0, 0);
 
-        const diff = Math.abs(now.getTime() - prayerTime.getTime());
+        const diff = now.getTime() - prayerTime.getTime();
+        const absDiff = Math.abs(diff);
 
-        // Within 30 seconds of prayer time
-        if (diff <= 30000) {
+        // Within 30 seconds of prayer time (normal trigger)
+        // OR prayer was up to 5 minutes ago (grace period for cold start)
+        if (absDiff <= 30000 || (diff > 0 && diff <= 5 * 60 * 1000)) {
           const dateKey = `${key}-${now.toDateString()}`;
           if (notifiedPrayerRef.current !== dateKey) {
             notifiedPrayerRef.current = dateKey;
@@ -264,6 +261,32 @@ export function useAdhanPlayer() {
       }
     };
   }, [adhanEnabled, isLoaded, timings, triggerAdhan, adhanSound]);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handler = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === 'PLAY_ADHAN' && adhanEnabled) {
+        const soundKey = data.sound || adhanSound;
+        const prayerKey = data.prayer || '';
+        const arabicName = prayerArabic[prayerKey] || prayerKey;
+
+        const dateKey = `${prayerKey}-${new Date().toDateString()}`;
+        if (notifiedPrayerRef.current === dateKey) return;
+        notifiedPrayerRef.current = dateKey;
+
+        triggerAdhan(prayerKey, arabicName);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handler);
+    };
+  }, [adhanEnabled, adhanSound, triggerAdhan]);
 
   return { triggerAdhan, playAdhanTest, playAdhanPreview, pauseAdhan, isPlaying };
 }

@@ -3,6 +3,19 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSettingsStore } from '@/store/settings-store';
 
+// Type extensions for iOS detection
+declare global {
+  interface Window {
+    MSStream?: unknown;
+  }
+}
+
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
+}
+
 interface PushState {
   supported: boolean;
   ios: boolean;
@@ -15,11 +28,11 @@ interface PushState {
 
 // iOS detection utilities
 function isIOS(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
 function isIOSPWA(): boolean {
-  return (navigator as any).standalone === true;
+  return navigator.standalone === true;
 }
 
 export function usePushNotifications() {

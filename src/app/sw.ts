@@ -84,7 +84,20 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
-serwist.addEventListeners();
+// Notify open clients when background events happen
+async function notifyClients(data: { type: string; sound?: string; prayer?: string }) {
+  try {
+    const allClients = await self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+    allClients.forEach((client: any) => {
+      client.postMessage(data);
+    });
+  } catch {
+    // No clients available — that's fine, notification is enough
+  }
+}
 
 // Zad Muslim - Service Worker for Push Notifications + Background Sync
 // Handles:
@@ -270,6 +283,12 @@ async function checkPrayerTimesOffline() {
           [200, 100, 200, 100, 200, 100, 200]
         );
 
+        await notifyClients({
+          type: 'PLAY_ADHAN',
+          prayer: prayer,
+          sound: settings.adhanSound || 'rashed',
+        });
+
         // Mark as sent
         await caches.open('zad-muslim-cache').then((cache) => {
           cache.put(`/api/${sentKey}`, new Response('sent'));
@@ -337,6 +356,8 @@ async function checkSalawatOffline() {
     [200, 100, 200]
   );
 
+  await notifyClients({ type: 'PLAY_SALAWAT' });
+
   // Update lastSalawatSent
   await saveSettings({ ...settings, lastSalawatSent: salawatSlot });
   console.log('[SW] ✅ Offline salawat notification');
@@ -384,6 +405,16 @@ self.addEventListener('push', (event) => {
       requireInteraction,
       actions: [{ action: 'dismiss', title: 'إغلاق' }],
       data: { url: '/', prayer: prayer || '', type: type || 'general' },
+    }).then(() => {
+      if (type === 'adhan') {
+        return notifyClients({
+          type: 'PLAY_ADHAN',
+          prayer: prayer || '',
+          sound: 'rashed',
+        });
+      } else if (type === 'salawat') {
+        return notifyClients({ type: 'PLAY_SALAWAT' });
+      }
     })
   );
 });
@@ -396,11 +427,23 @@ self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked:', event.notification.tag);
   event.notification.close();
 
+  const notifData = event.notification.data || {};
+  const notifType = notifData.type || '';
+  const prayer = notifData.prayer || '';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url.includes('/') && 'focus' in client) {
-          return client.focus();
+          client.focus();
+          if (notifType === 'adhan') {
+            client.postMessage({
+              type: 'PLAY_ADHAN',
+              prayer: prayer,
+              sound: 'rashed',
+            });
+          }
+          return;
         }
       }
       if (clients.openWindow) {

@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import type { Hadith } from '@/types';
 
 // Load fallback data dynamically
-let fallbackData: any[] | null = null;
+let fallbackData: Hadith[] | null = null;
 async function getFallbackData() {
   if (!fallbackData) {
     try {
       const filePath = join(process.cwd(), 'src/data/bukhari-150.json');
-      const fileContent = await readFile(filePath, 'utf-8');
-      fallbackData = JSON.parse(fileContent);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      try {
+        const fileContent = await readFile(filePath, 'utf-8');
+        clearTimeout(timeoutId);
+        fallbackData = JSON.parse(fileContent);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
     } catch (error) {
       fallbackData = [{
+        id: 1,
+        collection: "Bukhari",
+        collectionAr: "صحيح البخاري",
+        bookNumber: "1",
+        hadithNumber: "1",
         textAr: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ",
         textEn: "Actions are judged by intentions",
         narrator: "الإمام البخاري",
@@ -102,6 +116,21 @@ export async function GET(request: NextRequest) {
 
     // Only Bukhari is available
     const fallback = await getFallbackData();
+    if (!fallback || fallback.length === 0) {
+      return NextResponse.json({
+        daily: {
+          textAr: "لا توجد بيانات",
+          textEn: "No data available",
+          narrator: "",
+          source: "N/A",
+          grade: ""
+        },
+        collections: HADITH_COLLECTIONS,
+        items: [],
+        totalHadiths: 0,
+        isFallback: true
+      });
+    }
     return NextResponse.json({
       daily: fallback[Math.floor(Math.random() * fallback.length)],
       collections: HADITH_COLLECTIONS,
@@ -112,6 +141,21 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     const fallback = await getFallbackData();
+    if (!fallback || fallback.length === 0) {
+      return NextResponse.json({
+        daily: {
+          textAr: "خطأ في تحميل الحديث",
+          textEn: "Error loading hadith",
+          narrator: "",
+          source: "N/A",
+          grade: ""
+        },
+        collections: HADITH_COLLECTIONS,
+        items: [],
+        totalHadiths: 0,
+        isFallback: true
+      });
+    }
     return NextResponse.json({
       daily: fallback[0],
       collections: HADITH_COLLECTIONS,
