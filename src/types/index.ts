@@ -1,164 +1,3 @@
-// ===== Prayer Types =====
-export interface PrayerTime {
-  name: string;
-  nameAr: string;
-  time: string;
-  timestamp: number;
-  icon: string;
-}
-
-export interface PrayerTimings {
-  Fajr: string;
-  Sunrise: string;
-  Dhuhr: string;
-  Asr: string;
-  Sunset: string;
-  Maghrib: string;
-  Isha: string;
-  Midnight?: string;
-  [key: string]: string | undefined;
-}
-
-export interface NextPrayer {
-  name: string;
-  nameAr: string;
-  time: string;
-  remaining: number; // ms until prayer
-}
-
-export interface HijriDate {
-  day: string;
-  month: string;
-  monthAr: string;
-  monthEn: string;
-  year: string;
-  designation: { abbreviated: string; expanded: string };
-  weekday: { en: string; ar: string };
-}
-
-// ===== Quran Types =====
-export type RevelationType = 'Meccan' | 'Medinan';
-
-export interface SurahInfo {
-  number: number;
-  name: string;
-  englishName: string;
-  englishNameTranslation: string;
-  numberOfAyahs: number;
-  revelationType: RevelationType;
-}
-
-export interface Ayah {
-  number: number; // global ayah number
-  numberInSurah: number;
-  text: string;
-  translation?: string;
-  audioUrl?: string;
-}
-
-export interface SurahFull {
-  number: number;
-  name: string;
-  englishName: string;
-  englishNameTranslation: string;
-  numberOfAyahs: number;
-  revelationType: RevelationType;
-  ayahs: Ayah[];
-}
-
-export interface Reciter {
-  id: string;
-  name: string;
-  nameAr: string;
-  folder?: string;
-  style?: string;
-}
-
-// ===== Azkar Types =====
-export interface Dhikr {
-  id: number;
-  category: string;
-  count: number;
-  description: string;
-  reference: string;
-  content: string;
-  fadl?: string;
-}
-
-// ===== Hadith Types =====
-export interface Hadith {
-  id: number;
-  collection: string;
-  collectionAr: string;
-  bookNumber: string;
-  hadithNumber: string;
-  textAr: string;
-  textEn?: string;
-  grade?: string;
-  narrator?: string;
-  source?: string;
-}
-
-// ===== Names of Allah =====
-export interface NameOfAllah {
-  name: string;
-  transliteration: string;
-  meaning: string;
-  meaningAr?: string;
-  number: number;
-}
-
-// ===== Radio Types =====
-export interface RadioStation {
-  id: number;
-  name: string;
-  nameEn?: string;
-  url: string;
-  img?: string;
-  description?: string;
-  country?: string;
-  genres?: string[];
-  frequency?: string;
-  category?: "reciter" | "official" | "misc";
-}
-
-export interface RadioPlayerState {
-  activeStation: RadioStation | null;
-  isPlaying: boolean;
-  isBuffering: boolean;
-  hasError: boolean;
-  errorMessage: string | null;
-  volume: number;
-}
-
-export interface RadioPlayerState {
-  activeStation: RadioStation | null;
-  isPlaying: boolean;
-  isBuffering: boolean;
-  hasError: boolean;
-  errorMessage: string | null;
-  volume: number;
-}
-
-// ===== Goals Types =====
-export interface DailyGoal {
-  id: string;
-  date: string;
-  quranPages: number;
-  adhkarMorning: boolean;
-  adhkarEvening: boolean;
-  adhkarSleep: boolean;
-  salawatCount: number;
-  qiyamAlLayl: boolean;
-  duhaPrayer: boolean;
-  fasting: boolean;
-  charity: boolean;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ===== Settings Types =====
 export interface UserSettings {
   language: "ar" | "en";
   theme: "dark" | "light";
@@ -166,122 +5,70 @@ export interface UserSettings {
   madhab: 0 | 1;
   reciterId: string;
   quranFontSize: number;
-  translationLang: string;
+  translationLang: "ar" | "en";
   locationLat: number;
   locationLng: number;
   locationName: string;
   notificationsEnabled: boolean;
   eyeComfort: boolean;
   salawatEnabled: boolean;
-  salawatSound: string; // salawat_1, salawat_2, salawat_3
-  salawatInterval: number; // minutes: 1, 5, 10, 15, 30
-  prayerReminderEnabled: boolean;
-  prayerReminderMinutes: number; // 5, 10, 15, 20, 30
-  adhanEnabled: boolean; // play adhan at prayer time
-  adhanSound: string; // default, algeria, makka, rashed
-  pushEnabled: boolean; // push notifications when app is closed
-}
-
-// ===== Mushaf Page Types =====
-export interface SurahMeta {
-  number: number;
-  name: string;
-  englishName: string;
-  englishNameTranslation: string;
-  numberOfAyahs: number;
-  revelationType: RevelationType;
-}
-
-export interface PageAyah {
-  number: number;
-  text: string;
-  numberInSurah: number;
-  juz: number;
-  hizbQuarter: number;
-  sajda: boolean;
-  surah?: SurahMeta;
-}
-
-export interface MushafPageData {
-  number: number;
-  ayahs: PageAyah[];
-  surahStarts: SurahMeta[];
-}
-
-export type QuranMode = "mushaf" | "surah";
-
-// ===== Salawat Types =====
-export interface SalawatState {
-  count: number;
-  target: number;
-  history: { date: string; count: number }[];
-}
-
-// ===== Navigation =====
-export type AppTab = "home" | "quran" | "prayer" | "azkar" | "more";
-export type MoreView = "menu" | "hadith" | "salawat" | "settings" | "names" | "qibla" | "radio" | "goals" | "calendar";
-
-export interface QuranView {
-  type: "list" | "reader" | "bookmarks" | "search";
-  surahNumber?: number;
-}
-
-// ===== Translation Types =====
-export interface TranslationStrings {
-  home: string;
-  quran: string;
-  prayer: string;
-  azkar: string;
-  more: string;
-  fajr: string;
-  dhuhr: string;
-  asr: string;
-  maghrib: string;
-  isha: string;
-  sunrise: string;
-  nextPrayer: string;
-  remaining: string;
-  settings: string;
-  language: string;
-  theme: string;
-  dark: string;
-  light: string;
-  method: string;
-  madhab: string;
-  reciter: string;
-  selectReciter: string;
-  fontSize: string;
-  reset: string;
-  greeting: string;
-  tagline: string;
-  appName: string;
-  noResults: string;
-  back: string;
-  pushNotifications: string;
-  pushSubscribed: string;
-  pushNotSupported: string;
-  pushDescription: string;
-  adhanNotifTitle: string;
-  adhanNotifBody: string;
-  eyeComfort: string;
+  salawatInterval: number;
   salawatSound: string;
-  salawatInterval: string;
-  salawatIntervalDesc: string;
-  chooseSalawatInterval: string;
-  hadithToday: string;
-  narrator: string;
-  source: string;
-  grade: string;
-  error: string;
-  retry: string;
-  tapToCount?: string;
-  rounds?: string;
-  target?: string;
-  tasbeeh?: string;
-  adhanToastTitle?: string;
-  locationDenied?: string;
-  selectCity?: string;
-  page?: string;
-  of?: string;
-  juz?: string;
+  prayerReminderEnabled: boolean;
+  prayerReminderMinutes: number;
+  adhanEnabled: boolean;
+  adhanSound: string;
+  pushEnabled: boolean;
+}
+
+export interface Reciter {
+  id: string;
+  name: string;
+  nameAr: string;
+  style: string;
+}
+
+export type AppTab = "home" | "quran" | "prayer" | "azkar" | "more";
+
+export type QuranView = "home" | "surah" | "mushaf";
+
+export type QuranMode = "reading" | "listening";
+
+export type MoreView = "qibla" | "calendar" | "radio" | "settings" | "names" | "hadith" | "goals";
+
+export interface PrayerTimings {
+  Fajr: string;
+  Sunrise: string;
+  Dhuhr: string;
+  Asr: string;
+  Maghrib: string;
+  Isha: string;
+}
+
+export interface HijriDate {
+  date: string;
+  month: string;
+  year: string;
+  day: string;
+}
+
+export interface NextPrayer {
+  name: string;
+  nameAr: string;
+  time: string;
+  remaining: string;
+}
+
+export interface RadioStation {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface NameOfAllah {
+  id: number;
+  name: string;
+  nameAr: string;
+  meaning: string;
+  meaningAr: string;
 }
