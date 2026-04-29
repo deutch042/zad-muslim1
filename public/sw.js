@@ -1,2 +1,358 @@
-(()=>{"use strict";let e,t,a,r,s,n={googleAnalytics:"googleAnalytics",precache:"precache-v2",prefix:"serwist",runtime:"runtime",suffix:"u">typeof registration?registration.scope:""},i=e=>[n.prefix,e,n.suffix].filter(e=>e&&e.length>0).join("-"),c=e=>e||i(n.precache);class o extends Error{details;constructor(e,t){super(((e,...t)=>{let a=e;return t.length>0&&(a+=` :: ${JSON.stringify(t)}`),a})(e,t)),this.name=e,this.details=t}}function l(e){return new Promise(t=>setTimeout(t,e))}let h=new Set;function u(e,t){let a=new URL(e);for(let e of t)a.searchParams.delete(e);return a.href}async function d(e,t,a,r){let s=u(t.url,a);if(t.url===s)return e.match(t,r);let n={...r,ignoreSearch:!0};for(let i of(await e.keys(t,n)))if(s===u(i.url,a))return e.match(i,r)}class f{promise;resolve;reject;constructor(){this.promise=new Promise((e,t)=>{this.resolve=e,this.reject=t})}}let p=async()=>{for(let e of h)await e()},y="-precache-",w=async(e,t=y)=>{let a=(await self.caches.keys()).filter(a=>a.includes(t)&&a.includes(self.registration.scope)&&a!==e);return await Promise.all(a.map(e=>self.caches.delete(e))),a},g=(e,t)=>{let a=t();return e.waitUntil(a),a},m=(e,t)=>t.some(t=>e instanceof t),_=new WeakMap,b=new WeakMap,v=new WeakMap,S={get(e,t,a){if(e instanceof IDBTransaction){if("done"===t)return _.get(e);if("store"===t)return a.objectStoreNames[1]?void 0:a.objectStore(a.objectStoreNames[0])}return R(e[t])},set:(e,t,a)=>(e[t]=a,!0),has:(e,t)=>e instanceof IDBTransaction&&("done"===t||"store"===t)||t in e};function R(e){if(e instanceof IDBRequest){let t;return t=new Promise((t,a)=>{let r=()=>{e.removeEventListener("success",s),e.removeEventListener("error",n)},s=()=>{t(R(e.result)),r()},n=()=>{a(e.error),r()};e.addEventListener("success",s),e.addEventListener("error",n)}),v.set(t,e),t}if(b.has(e))return b.get(e);let t=function(e){if("function"==typeof e)return(s||(s=[IDBCursor.prototype.advance,IDBCursor.prototype.continue,IDBCursor.prototype.continuePrimaryKey])).includes(e)?function(...t){return e.apply(q(this),t),R(this.request)}:function(...t){return R(e.apply(q(this),t))};return(e instanceof IDBTransaction&&function(e){if(_.has(e))return;let t=new Promise((t,a)=>{let r=()=>{e.removeEventListener("complete",s),e.removeEventListener("error",n),e.removeEventListener("abort",n)},s=()=>{t(),r()},n=()=>{a(e.error||new DOMException("AbortError","AbortError")),r()};e.addEventListener("complete",s),e.addEventListener("error",n),e.addEventListener("abort",n)});_.set(e,t)}(e),m(e,r||(r=[IDBDatabase,IDBObjectStore,IDBIndex,IDBCursor,IDBTransaction])))?new Proxy(e,S):e}(e);return t!==e&&(b.set(e,t),v.set(t,e)),t}let q=e=>v.get(e),E=["get","getKey","getAll","getAllKeys","count"],P=["put","add","delete","clear"],k=new Map;function D(e,t){if(!(e instanceof IDBDatabase&&!(t in e)&&"string"==typeof t))return;if(k.get(t))return k.get(t);let a=t.replace(/FromIndex$/,""),r=t!==a,s=P.includes(a);if(!(a in(r?IDBIndex:IDBObjectStore).prototype)||!(s||E.includes(a)))return;let n=async function(e,...t){let n=this.transaction(e,s?"readwrite":"readonly"),i=n.store;return r&&(i=i.index(t.shift())),(await Promise.all([i[a](...t),s&&n.done]))[0]};return k.set(t,n),n}S={...e=S,get:(t,a,r)=>D(t,a)||e.get(t,a,r),has:(t,a)=>!!D(t,a)||e.has(t,a)};let C=["continue","continuePrimaryKey","advance"],I={},N=new WeakMap,T=new WeakMap,L={get(e,t){if(!C.includes(t))return e[t];let a=I[t];return a||(a=I[t]=function(...e){N.set(this,T.get(this)[t](...e))}),a}};async function*U(...e){let t=this;if(t instanceof IDBCursor||(t=await t.openCursor(...e)),!t)return;let a=new Proxy(t,L);for(T.set(a,t),v.set(a,q(t));t;)yield a,t=await (N.get(a)||t.continue()),N.delete(a)}function x(e,t){return t===Symbol.asyncIterator&&m(e,[IDBIndex,IDBObjectStore,IDBCursor])||"iterate"===t&&m(e,[IDBIndex,IDBObjectStore])}S={...t=S,get:(e,a,r)=>x(e,a)?U:t.get(e,a,r),has:(e,a)=>x(e,a)||t.has(e,a)};let W=async(e,t)=>{let r=null;if(e.url&&(r=new URL(e.url).origin),r!==self.location.origin)throw new o("cross-origin-copy-response",{origin:r});let s=e.clone(),n={headers:new Headers(s.headers),status:s.status,statusText:s.statusText},i=t?t(n):n,c=!function(){if(void 0===a){let e=new Response("");if("body"in e)try{new Response(e.body),a=!0}catch{a=!1}a=!1}return a}()?await s.blob():s.body;return new Response(c,i)},A="requests",M="queueName";class O{_db=null;async addEntry(e){let t=(await this.getDb()).transaction(A,"readwrite",{durability:"relaxed"});await t.store.add(e),await t.done}async getFirstEntryId(){let e=await this.getDb(),t=await e.transaction(A).store.openCursor();return t?.value.id}async getAllEntriesByQueueName(e){let t=await this.getDb();return await t.getAllFromIndex(A,M,IDBKeyRange.only(e))||[]}async getEntryCountByQueueName(e){return(await this.getDb()).countFromIndex(A,M,IDBKeyRange.only(e))}async deleteEntry(e){let t=await this.getDb();await t.delete(A,e)}async getFirstEntryByQueueName(e){return await this.getEndEntryFromIndex(IDBKeyRange.only(e),"next")}async getLastEntryByQueueName(e){return await this.getEndEntryFromIndex(IDBKeyRange.only(e),"prev")}async getEndEntryFromIndex(e,t){let a=await this.getDb(),r=await a.transaction(A).store.index(M).openCursor(e,t);return r?.value}async getDb(){return this._db||(this._db=await function(e,t,{blocked:a,upgrade:r,blocking:s,terminated:n}={}){let i=indexedDB.open(e,3),c=R(i);return r&&i.addEventListener("upgradeneeded",e=>{r(R(i.result),e.oldVersion,e.newVersion,R(i.transaction),e)}),a&&i.addEventListener("blocked",e=>a(e.oldVersion,e.newVersion,e)),c.then(e=>{n&&e.addEventListener("close",()=>n()),s&&e.addEventListener("versionchange",e=>s(e.oldVersion,e.newVersion,e))}).catch(()=>{}),c}("serwist-background-sync",0,{upgrade:this._upgradeDb})),this._db}_upgradeDb(e,t){t>0&&t<3&&e.objectStoreNames.contains(A)&&e.deleteObjectStore(A),e.createObjectStore(A,{autoIncrement:!0,keyPath:"id"}).createIndex(M,M,{unique:!1})}}class B{_queueName;_queueDb;constructor(e){this._queueName=e,this._queueDb=new O}async pushEntry(e){delete e.id,e.queueName=this._queueName,await this._queueDb.addEntry(e)}async unshiftEntry(e){let t=await this._queueDb.getFirstEntryId();t?e.id=t-1:delete e.id,e.queueName=this._queueName,await this._queueDb.addEntry(e)}async popEntry(){return this._removeEntry(await this._queueDb.getLastEntryByQueueName(this._queueName))}async shiftEntry(){return this._removeEntry(await this._queueDb.getFirstEntryByQueueName(this._queueName))}async getAll(){return await this._queueDb.getAllEntriesByQueueName(this._queueName)}async size(){return await this._queueDb.getEntryCountByQueueName(this._queueName)}async deleteEntry(e){await this._queueDb.deleteEntry(e)}async _removeEntry(e){return e&&await this.deleteEntry(e.id),e}}let K=["method","referrer","referrerPolicy","mode","credentials","cache","redirect","integrity","keepalive"];class j{_requestData;static async fromRequest(e){let t={url:e.url,headers:{}};for(let a of("GET"!==e.method&&(t.body=await e.clone().arrayBuffer()),e.headers.forEach((e,a)=>{t.headers[a]=e}),K))void 0!==e[a]&&(t[a]=e[a]);return new j(t)}constructor(e){"navigate"===e.mode&&(e.mode="same-origin"),this._requestData=e}toObject(){let e=Object.assign({},this._requestData);return e.headers=Object.assign({},this._requestData.headers),e.body&&(e.body=e.body.slice(0)),e}toRequest(){return new Request(this._requestData.url,this._requestData)}clone(){return new j(this.toObject())}}let F="serwist-background-sync",$=new Set,H=e=>{let t={request:new j(e.requestData).toRequest(),timestamp:e.timestamp};return e.metadata&&(t.metadata=e.metadata),t};class G{_name;_onSync;_maxRetentionTime;_queueStore;_forceSyncFallback;_syncInProgress=!1;_requestsAddedDuringSync=!1;constructor(e,{forceSyncFallback:t,onSync:a,maxRetentionTime:r}={}){if($.has(e))throw new o("duplicate-queue-name",{name:e});$.add(e),this._name=e,this._onSync=a||this.replayRequests,this._maxRetentionTime=r||10080,this._forceSyncFallback=!!t,this._queueStore=new B(this._name),this._addSyncListener()}get name(){return this._name}async pushRequest(e){await this._addRequest(e,"push")}async unshiftRequest(e){await this._addRequest(e,"unshift")}async popRequest(){return this._removeRequest("pop")}async shiftRequest(){return this._removeRequest("shift")}async getAll(){let e=await this._queueStore.getAll(),t=Date.now(),a=[];for(let r of e){let e=60*this._maxRetentionTime*1e3;t-r.timestamp>e?await this._queueStore.deleteEntry(r.id):a.push(H(r))}return a}async size(){return await this._queueStore.size()}async _addRequest({request:e,metadata:t,timestamp:a=Date.now()},r){let s={requestData:(await j.fromRequest(e.clone())).toObject(),timestamp:a};switch(t&&(s.metadata=t),r){case"push":await this._queueStore.pushEntry(s);break;case"unshift":await this._queueStore.unshiftEntry(s)}this._syncInProgress?this._requestsAddedDuringSync=!0:await this.registerSync()}async _removeRequest(e){let t,a=Date.now();switch(e){case"pop":t=await this._queueStore.popEntry();break;case"shift":t=await this._queueStore.shiftEntry()}if(t){let r=60*this._maxRetentionTime*1e3;return a-t.timestamp>r?this._removeRequest(e):H(t)}}async replayRequests(){let e;for(;e=await this.shiftRequest();)try{await fetch(e.request.clone())}catch{throw await this.unshiftRequest(e),new o("queue-replay-failed",{name:this._name})}}async registerSync(){if("sync"in self.registration&&!this._forceSyncFallback)try{await self.registration.sync.register(`${F}:${this._name}`)}catch(e){}}_addSyncListener(){"sync"in self.registration&&!this._forceSyncFallback?self.addEventListener("sync",e=>{if(e.tag===`${F}:${this._name}`){let t=async()=>{let t;this._syncInProgress=!0;try{await this._onSync({queue:this})}catch(e){if(e instanceof Error)throw e}finally{this._requestsAddedDuringSync&&!(t&&!e.lastChance)&&await this.registerSync(),this._syncInProgress=!1,this._requestsAddedDuringSync=!1}};e.waitUntil(t())}}):this._onSync({queue:this})}static get _queueNames(){return $}}class Q{_queue;constructor(e,t){this._queue=new G(e,t)}async fetchDidFail({request:e}){await this._queue.pushRequest({request:e})}}let V={cacheWillUpdate:async({response:e})=>200===e.status||0===e.status?e:null};function z(e){return"string"==typeof e?new Request(e):e}class Y{event;request;url;params;_cacheKeys={};_strategy;_handlerDeferred;_extendLifetimePromises;_plugins;_pluginStateMap;constructor(e,t){for(const a of(this.event=t.event,this.request=t.request,t.url&&(this.url=t.url,this.params=t.params),this._strategy=e,this._handlerDeferred=new f,this._extendLifetimePromises=[],this._plugins=[...e.plugins],this._pluginStateMap=new Map,this._plugins))this._pluginStateMap.set(a,{});this.event.waitUntil(this._handlerDeferred.promise)}async fetch(e){let{event:t}=this,a=z(e),r=await this.getPreloadResponse();if(r)return r;let s=this.hasCallback("fetchDidFail")?a.clone():null;try{for(let e of this.iterateCallbacks("requestWillFetch"))a=await e({request:a.clone(),event:t})}catch(e){if(e instanceof Error)throw new o("plugin-error-request-will-fetch",{thrownErrorMessage:e.message})}let n=a.clone();try{let e;for(let r of(e=await fetch(a,"navigate"===a.mode?void 0:this._strategy.fetchOptions),this.iterateCallbacks("fetchDidSucceed")))e=await r({event:t,request:n,response:e});return e}catch(e){throw s&&await this.runCallbacks("fetchDidFail",{error:e,event:t,originalRequest:s.clone(),request:n.clone()}),e}}async fetchAndCachePut(e){let t=await this.fetch(e),a=t.clone();return this.waitUntil(this.cachePut(e,a)),t}async cacheMatch(e){let t,a=z(e),{cacheName:r,matchOptions:s}=this._strategy,n=await this.getCacheKey(a,"read"),i={...s,cacheName:r};for(let e of(t=await caches.match(n,i),this.iterateCallbacks("cachedResponseWillBeUsed")))t=await e({cacheName:r,matchOptions:s,cachedResponse:t,request:n,event:this.event})||void 0;return t}async cachePut(e,t){let a=z(e);await l(0);let r=await this.getCacheKey(a,"write");if(!t)throw new o("cache-put-with-no-response",{url:new URL(String(r.url),location.href).href.replace(RegExp(`^${location.origin}`),"")});let s=await this._ensureResponseSafeToCache(t);if(!s)return!1;let{cacheName:n,matchOptions:i}=this._strategy,c=await self.caches.open(n),h=this.hasCallback("cacheDidUpdate"),u=h?await d(c,r.clone(),["__WB_REVISION__"],i):null;try{await c.put(r,h?s.clone():s)}catch(e){if(e instanceof Error)throw"QuotaExceededError"===e.name&&await p(),e}for(let e of this.iterateCallbacks("cacheDidUpdate"))await e({cacheName:n,oldResponse:u,newResponse:s.clone(),request:r,event:this.event});return!0}async getCacheKey(e,t){let a=`${e.url} | ${t}`;if(!this._cacheKeys[a]){let r=e;for(let e of this.iterateCallbacks("cacheKeyWillBeUsed"))r=z(await e({mode:t,request:r,event:this.event,params:this.params}));this._cacheKeys[a]=r}return this._cacheKeys[a]}hasCallback(e){for(let t of this._strategy.plugins)if(e in t)return!0;return!1}async runCallbacks(e,t){for(let a of this.iterateCallbacks(e))await a(t)}*iterateCallbacks(e){for(let t of this._strategy.plugins)if("function"==typeof t[e]){let a=this._pluginStateMap.get(t),r=r=>{let s={...r,state:a};return t[e](s)};yield r}}waitUntil(e){return this._extendLifetimePromises.push(e),e}async doneWaiting(){let e;for(;e=this._extendLifetimePromises.shift();)await e}destroy(){this._handlerDeferred.resolve(null)}async getPreloadResponse(){if(this.event instanceof FetchEvent&&"navigate"===this.event.request.mode&&"preloadResponse"in this.event)try{let e=await this.event.preloadResponse;if(e)return e}catch(e){}}async _ensureResponseSafeToCache(e){let t=e,a=!1;for(let e of this.iterateCallbacks("cacheWillUpdate"))if(t=await e({request:this.request,response:t,event:this.event})||void 0,a=!0,!t)break;return!a&&t&&200!==t.status&&(t=void 0),t}}class J{cacheName;plugins;fetchOptions;matchOptions;constructor(e={}){this.cacheName=e.cacheName||i(n.runtime),this.plugins=e.plugins||[],this.fetchOptions=e.fetchOptions,this.matchOptions=e.matchOptions}handle(e){let[t]=this.handleAll(e);return t}handleAll(e){e instanceof FetchEvent&&(e={event:e,request:e.request});let t=e.event,a="string"==typeof e.request?new Request(e.request):e.request,r=new Y(this,e.url?{event:t,request:a,url:e.url,params:e.params}:{event:t,request:a}),s=this._getResponse(r,a,t),n=this._awaitComplete(s,r,a,t);return[s,n]}async _getResponse(e,t,a){let r;await e.runCallbacks("handlerWillStart",{event:a,request:t});try{if(r=await this._handle(t,e),void 0===r||"error"===r.type)throw new o("no-response",{url:t.url})}catch(s){if(s instanceof Error){for(let n of e.iterateCallbacks("handlerDidError"))if(void 0!==(r=await n({error:s,event:a,request:t})))break}if(!r)throw s}for(let s of e.iterateCallbacks("handlerWillRespond"))r=await s({event:a,request:t,response:r});return r}async _awaitComplete(e,t,a,r){let s,n;try{s=await e}catch{}try{await t.runCallbacks("handlerDidRespond",{event:r,request:a,response:s}),await t.doneWaiting()}catch(e){e instanceof Error&&(n=e)}if(await t.runCallbacks("handlerDidComplete",{event:r,request:a,response:s,error:n}),t.destroy(),n)throw n}}class X extends J{_networkTimeoutSeconds;constructor(e={}){super(e),this.plugins.some(e=>"cacheWillUpdate"in e)||this.plugins.unshift(V),this._networkTimeoutSeconds=e.networkTimeoutSeconds||0}async _handle(e,t){let a,r=[],s=[];if(this._networkTimeoutSeconds){let{id:n,promise:i}=this._getTimeoutPromise({request:e,logs:r,handler:t});a=n,s.push(i)}let n=this._getNetworkPromise({timeoutId:a,request:e,logs:r,handler:t});s.push(n);let i=await t.waitUntil((async()=>await t.waitUntil(Promise.race(s))||await n)());if(!i)throw new o("no-response",{url:e.url});return i}_getTimeoutPromise({request:e,logs:t,handler:a}){let r;return{promise:new Promise(t=>{r=setTimeout(async()=>{t(await a.cacheMatch(e))},1e3*this._networkTimeoutSeconds)}),id:r}}async _getNetworkPromise({timeoutId:e,request:t,logs:a,handler:r}){let s,n;try{n=await r.fetchAndCachePut(t)}catch(e){e instanceof Error&&(s=e)}return e&&clearTimeout(e),(s||!n)&&(n=await r.cacheMatch(t)),n}}class Z extends J{_networkTimeoutSeconds;constructor(e={}){super(e),this._networkTimeoutSeconds=e.networkTimeoutSeconds||0}async _handle(e,t){let a,r;try{let a=[t.fetch(e)];if(this._networkTimeoutSeconds){let e=l(1e3*this._networkTimeoutSeconds);a.push(e)}if(!(r=await Promise.race(a)))throw Error(`Timed out the network response after ${this._networkTimeoutSeconds} seconds.`)}catch(e){e instanceof Error&&(a=e)}if(!r)throw new o("no-response",{url:e.url,error:a});return r}}let ee=e=>e&&"object"==typeof e?e:{handle:e};class et{handler;match;method;catchHandler;constructor(e,t,a="GET"){this.handler=ee(t),this.match=e,this.method=a}setCatchHandler(e){this.catchHandler=ee(e)}}class ea extends J{_fallbackToNetwork;static defaultPrecacheCacheabilityPlugin={cacheWillUpdate:async({response:e})=>!e||e.status>=400?null:e};static copyRedirectedCacheableResponsesPlugin={cacheWillUpdate:async({response:e})=>e.redirected?await W(e):e};constructor(e={}){e.cacheName=c(e.cacheName),super(e),this._fallbackToNetwork=!1!==e.fallbackToNetwork,this.plugins.push(ea.copyRedirectedCacheableResponsesPlugin)}async _handle(e,t){let a=await t.getPreloadResponse();if(a)return a;let r=await t.cacheMatch(e);return r||(t.event&&"install"===t.event.type?await this._handleInstall(e,t):await this._handleFetch(e,t))}async _handleFetch(e,t){let a,r=t.params||{};if(this._fallbackToNetwork){let s=r.integrity,n=e.integrity,i=!n||n===s;a=await t.fetch(new Request(e,{integrity:"no-cors"!==e.mode?n||s:void 0})),s&&i&&"no-cors"!==e.mode&&(this._useDefaultCacheabilityPluginIfNeeded(),await t.cachePut(e,a.clone()))}else throw new o("missing-precache-entry",{cacheName:this.cacheName,url:e.url});return a}async _handleInstall(e,t){this._useDefaultCacheabilityPluginIfNeeded();let a=await t.fetch(e);if(!await t.cachePut(e,a.clone()))throw new o("bad-precaching-response",{url:e.url,status:a.status});return a}_useDefaultCacheabilityPluginIfNeeded(){let e=null,t=0;for(let[a,r]of this.plugins.entries())r!==ea.copyRedirectedCacheableResponsesPlugin&&(r===ea.defaultPrecacheCacheabilityPlugin&&(e=a),r.cacheWillUpdate&&t++);0===t?this.plugins.push(ea.defaultPrecacheCacheabilityPlugin):t>1&&null!==e&&this.plugins.splice(e,1)}}class er extends et{_allowlist;_denylist;constructor(e,{allowlist:t=[/./],denylist:a=[]}={}){super(e=>this._match(e),e),this._allowlist=t,this._denylist=a}_match({url:e,request:t}){if(t&&"navigate"!==t.mode)return!1;let a=e.pathname+e.search;for(let e of this._denylist)if(e.test(a))return!1;return!!this._allowlist.some(e=>e.test(a))}}class es extends et{constructor(e,t,a){super(({url:t})=>{let a=e.exec(t.href);if(a)return t.origin!==location.origin&&0!==a.index?void 0:a.slice(1)},t,a)}}let en=e=>{if(!e)throw new o("add-to-cache-list-unexpected-type",{entry:e});if("string"==typeof e){let t=new URL(e,location.href);return{cacheKey:t.href,url:t.href}}let{revision:t,url:a}=e;if(!a)throw new o("add-to-cache-list-unexpected-type",{entry:e});if(!t){let e=new URL(a,location.href);return{cacheKey:e.href,url:e.href}}let r=new URL(a,location.href),s=new URL(a,location.href);return r.searchParams.set("__WB_REVISION__",t),{cacheKey:r.href,url:s.href}};class ei{updatedURLs=[];notUpdatedURLs=[];handlerWillStart=async({request:e,state:t})=>{t&&(t.originalRequest=e)};cachedResponseWillBeUsed=async({event:e,state:t,cachedResponse:a})=>{if("install"===e.type&&t?.originalRequest&&t.originalRequest instanceof Request){let e=t.originalRequest.url;a?this.notUpdatedURLs.push(e):this.updatedURLs.push(e)}return a}}let ec=async(e,t,a)=>{let r=t.map((e,t)=>({index:t,item:e})),s=async e=>{let t=[];for(;;){let s=r.pop();if(!s)return e(t);let n=await a(s.item);t.push({result:n,index:s.index})}},n=Array.from({length:e},()=>new Promise(s));return(await Promise.all(n)).flat().sort((e,t)=>e.index<t.index?-1:1).map(e=>e.result)};"u">typeof navigator&&/^((?!chrome|android).)*safari/i.test(navigator.userAgent);let eo="www.google-analytics.com",el="www.googletagmanager.com",eh=/^\/(\w+\/)?collect/,eu=({serwist:e,cacheName:t,...a})=>{let r,s,c=t||i(n.googleAnalytics),o=new Q("serwist-google-analytics",{maxRetentionTime:2880,onSync:async({queue:e})=>{let t;for(;t=await e.shiftRequest();){let{request:r,timestamp:s}=t,n=new URL(r.url);try{let e="POST"===r.method?new URLSearchParams(await r.clone().text()):n.searchParams,t=s-(Number(e.get("qt"))||0),i=Date.now()-t;if(e.set("qt",String(i)),a.parameterOverrides)for(let t of Object.keys(a.parameterOverrides)){let r=a.parameterOverrides[t];e.set(t,r)}"function"==typeof a.hitFilter&&a.hitFilter.call(null,e),await fetch(new Request(n.origin+n.pathname,{body:e.toString(),method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"text/plain"}}))}catch(a){throw await e.unshiftRequest(t),a}}}});for(let t of[new et(({url:e})=>e.hostname===el&&"/gtm.js"===e.pathname,new X({cacheName:c}),"GET"),new et(({url:e})=>e.hostname===eo&&"/analytics.js"===e.pathname,new X({cacheName:c}),"GET"),new et(({url:e})=>e.hostname===el&&"/gtag/js"===e.pathname,new X({cacheName:c}),"GET"),new et(r=({url:e})=>e.hostname===eo&&eh.test(e.pathname),s=new Z({plugins:[o]}),"GET"),new et(r,s,"POST")])e.registerRoute(t)};class ed{_fallbackUrls;_serwist;constructor({fallbackUrls:e,serwist:t}){this._fallbackUrls=e,this._serwist=t}async handlerDidError(e){for(let t of this._fallbackUrls)if("string"==typeof t){let e=await this._serwist.matchPrecache(t);if(void 0!==e)return e}else if(t.matcher(e)){let e=await this._serwist.matchPrecache(t.url);if(void 0!==e)return e}}}class ef extends J{async _handle(e,t){let a,r=await t.cacheMatch(e);if(!r)try{r=await t.fetchAndCachePut(e)}catch(e){e instanceof Error&&(a=e)}if(!r)throw new o("no-response",{url:e.url,error:a});return r}}class ep extends et{constructor(e,t){super(({request:a})=>{let r=e.getUrlsToPrecacheKeys();for(let s of function*(e,{directoryIndex:t="index.html",ignoreURLParametersMatching:a=[/^utm_/,/^fbclid$/],cleanURLs:r=!0,urlManipulation:s}={}){let n=new URL(e,location.href);n.hash="",yield n.href;let i=((e,t=[])=>{for(let a of[...e.searchParams.keys()])t.some(e=>e.test(a))&&e.searchParams.delete(a);return e})(n,a);if(yield i.href,t&&i.pathname.endsWith("/")){let e=new URL(i.href);e.pathname+=t,yield e.href}if(r){let e=new URL(i.href);e.pathname+=".html",yield e.href}if(s)for(let e of s({url:n}))yield e.href}(a.url,t)){let t=r.get(s);if(t){let a=e.getIntegrityForPrecacheKey(t);return{cacheKey:t,integrity:a}}}},e.precacheStrategy)}}class ey{_precacheController;constructor({precacheController:e}){this._precacheController=e}cacheKeyWillBeUsed=async({request:e,params:t})=>{let a=t?.cacheKey||this._precacheController.getPrecacheKeyForUrl(e.url);return a?new Request(a,{headers:e.headers}):e}}class ew{_urlsToCacheKeys=new Map;_urlsToCacheModes=new Map;_cacheKeysToIntegrities=new Map;_concurrentPrecaching;_precacheStrategy;_routes;_defaultHandlerMap;_catchHandler;_requestRules;constructor({precacheEntries:e,precacheOptions:t,skipWaiting:a=!1,importScripts:r,navigationPreload:s=!1,cacheId:i,clientsClaim:o=!1,runtimeCaching:l,offlineAnalyticsConfig:h,disableDevLogs:u=!1,fallbacks:d,requestRules:f}={}){var p;const{precacheStrategyOptions:y,precacheRouteOptions:g,precacheMiscOptions:m}=((e,t={})=>{let{cacheName:a,plugins:r=[],fetchOptions:s,matchOptions:n,fallbackToNetwork:i,directoryIndex:o,ignoreURLParametersMatching:l,cleanURLs:h,urlManipulation:u,cleanupOutdatedCaches:d,concurrency:f=10,navigateFallback:p,navigateFallbackAllowlist:y,navigateFallbackDenylist:w}=t??{};return{precacheStrategyOptions:{cacheName:c(a),plugins:[...r,new ey({precacheController:e})],fetchOptions:s,matchOptions:n,fallbackToNetwork:i},precacheRouteOptions:{directoryIndex:o,ignoreURLParametersMatching:l,cleanURLs:h,urlManipulation:u},precacheMiscOptions:{cleanupOutdatedCaches:d,concurrency:f,navigateFallback:p,navigateFallbackAllowlist:y,navigateFallbackDenylist:w}}})(this,t);if(this._concurrentPrecaching=m.concurrency,this._precacheStrategy=new ea(y),this._routes=new Map,this._defaultHandlerMap=new Map,this._requestRules=f,this.handleInstall=this.handleInstall.bind(this),this.handleActivate=this.handleActivate.bind(this),this.handleFetch=this.handleFetch.bind(this),this.handleCache=this.handleCache.bind(this),r&&r.length>0&&self.importScripts(...r),s&&self.registration?.navigationPreload&&self.addEventListener("activate",e=>{e.waitUntil(self.registration.navigationPreload.enable().then(()=>{}))}),void 0!==i&&(e=>{var t=t=>{let a=e[t];"string"==typeof a&&(n[t]=a)};for(let e of Object.keys(n))t(e)})({prefix:i}),a?self.skipWaiting():self.addEventListener("message",e=>{e.data&&"SKIP_WAITING"===e.data.type&&self.skipWaiting()}),o&&self.addEventListener("activate",()=>self.clients.claim()),e&&e.length>0&&this.addToPrecacheList(e),m.cleanupOutdatedCaches&&(p=y.cacheName,self.addEventListener("activate",e=>{e.waitUntil(w(c(p)).then(e=>{}))})),this.registerRoute(new ep(this,g)),m.navigateFallback&&this.registerRoute(new er(this.createHandlerBoundToUrl(m.navigateFallback),{allowlist:m.navigateFallbackAllowlist,denylist:m.navigateFallbackDenylist})),void 0!==h&&("boolean"==typeof h?h&&eu({serwist:this}):eu({...h,serwist:this})),void 0!==l){if(void 0!==d){const e=new ed({fallbackUrls:d.entries,serwist:this});l.forEach(t=>{t.handler instanceof J&&!t.handler.plugins.some(e=>"handlerDidError"in e)&&t.handler.plugins.push(e)})}for(const e of l)this.registerCapture(e.matcher,e.handler,e.method)}u&&(self.__WB_DISABLE_DEV_LOGS=!0)}get precacheStrategy(){return this._precacheStrategy}get routes(){return this._routes}addEventListeners(){self.addEventListener("install",this.handleInstall),self.addEventListener("activate",this.handleActivate),self.addEventListener("fetch",this.handleFetch),self.addEventListener("message",this.handleCache)}addToPrecacheList(e){let t=[];for(let a of e){"string"==typeof a?t.push(a):a&&!a.integrity&&void 0===a.revision&&t.push(a.url);let{cacheKey:e,url:r}=en(a),s="string"!=typeof a&&a.revision?"reload":"default";if(this._urlsToCacheKeys.has(r)&&this._urlsToCacheKeys.get(r)!==e)throw new o("add-to-cache-list-conflicting-entries",{firstEntry:this._urlsToCacheKeys.get(r),secondEntry:e});if("string"!=typeof a&&a.integrity){if(this._cacheKeysToIntegrities.has(e)&&this._cacheKeysToIntegrities.get(e)!==a.integrity)throw new o("add-to-cache-list-conflicting-integrities",{url:r});this._cacheKeysToIntegrities.set(e,a.integrity)}this._urlsToCacheKeys.set(r,e),this._urlsToCacheModes.set(r,s)}t.length>0&&console.warn(`Serwist is precaching URLs without revision info: ${t.join(", ")}
-This is generally NOT safe. Learn more at https://bit.ly/wb-precache`)}handleInstall(e){return this.registerRequestRules(e),g(e,async()=>{let t=new ei;this.precacheStrategy.plugins.push(t),await ec(this._concurrentPrecaching,Array.from(this._urlsToCacheKeys.entries()),async([t,a])=>{let r=this._cacheKeysToIntegrities.get(a),s=this._urlsToCacheModes.get(t),n=new Request(t,{integrity:r,cache:s,credentials:"same-origin"});await Promise.all(this.precacheStrategy.handleAll({event:e,request:n,url:new URL(n.url),params:{cacheKey:a}}))});let{updatedURLs:a,notUpdatedURLs:r}=t;return{updatedURLs:a,notUpdatedURLs:r}})}async registerRequestRules(e){if(this._requestRules&&e?.addRoutes)try{await e.addRoutes(this._requestRules),this._requestRules=void 0}catch(e){throw e}}handleActivate(e){return g(e,async()=>{let e=await self.caches.open(this.precacheStrategy.cacheName),t=await e.keys(),a=new Set(this._urlsToCacheKeys.values()),r=[];for(let s of t)a.has(s.url)||(await e.delete(s),r.push(s.url));return{deletedCacheRequests:r}})}handleFetch(e){let{request:t}=e,a=this.handleRequest({request:t,event:e});a&&e.respondWith(a)}handleCache(e){if(e.data&&"CACHE_URLS"===e.data.type){let{payload:t}=e.data,a=Promise.all(t.urlsToCache.map(t=>{let a;return a="string"==typeof t?new Request(t):new Request(...t),this.handleRequest({request:a,event:e})}));e.waitUntil(a),e.ports?.[0]&&a.then(()=>e.ports[0].postMessage(!0))}}setDefaultHandler(e,t="GET"){this._defaultHandlerMap.set(t,ee(e))}setCatchHandler(e){this._catchHandler=ee(e)}registerCapture(e,t,a){let r=((e,t,a)=>{if("string"==typeof e){let r=new URL(e,location.href);return new et(({url:e})=>e.href===r.href,t,a)}if(e instanceof RegExp)return new es(e,t,a);if("function"==typeof e)return new et(e,t,a);if(e instanceof et)return e;throw new o("unsupported-route-type",{moduleName:"serwist",funcName:"parseRoute",paramName:"capture"})})(e,t,a);return this.registerRoute(r),r}registerRoute(e){this._routes.has(e.method)||this._routes.set(e.method,[]),this._routes.get(e.method).push(e)}unregisterRoute(e){if(!this._routes.has(e.method))throw new o("unregister-route-but-not-found-with-method",{method:e.method});let t=this._routes.get(e.method).indexOf(e);if(t>-1)this._routes.get(e.method).splice(t,1);else throw new o("unregister-route-route-not-registered")}getUrlsToPrecacheKeys(){return this._urlsToCacheKeys}getPrecachedUrls(){return[...this._urlsToCacheKeys.keys()]}getPrecacheKeyForUrl(e){let t=new URL(e,location.href);return this._urlsToCacheKeys.get(t.href)}getIntegrityForPrecacheKey(e){return this._cacheKeysToIntegrities.get(e)}async matchPrecache(e){let t=e instanceof Request?e.url:e,a=this.getPrecacheKeyForUrl(t);if(a)return(await self.caches.open(this.precacheStrategy.cacheName)).match(a)}createHandlerBoundToUrl(e){let t=this.getPrecacheKeyForUrl(e);if(!t)throw new o("non-precached-url",{url:e});return a=>(a.request=new Request(e),a.params={cacheKey:t,...a.params},this.precacheStrategy.handle(a))}handleRequest({request:e,event:t}){let a,r=new URL(e.url,location.href);if(!r.protocol.startsWith("http"))return;let s=r.origin===location.origin,{params:n,route:i}=this.findMatchingRoute({event:t,request:e,sameOrigin:s,url:r}),c=i?.handler,o=e.method;if(!c&&this._defaultHandlerMap.has(o)&&(c=this._defaultHandlerMap.get(o)),!c)return;try{a=c.handle({url:r,request:e,event:t,params:n})}catch(e){a=Promise.reject(e)}let l=i?.catchHandler;return a instanceof Promise&&(this._catchHandler||l)&&(a=a.catch(async a=>{if(l)try{return await l.handle({url:r,request:e,event:t,params:n})}catch(e){e instanceof Error&&(a=e)}if(this._catchHandler)return this._catchHandler.handle({url:r,request:e,event:t});throw a})),a}findMatchingRoute({url:e,sameOrigin:t,request:a,event:r}){for(let s of this._routes.get(a.method)||[]){let n,i=s.match({url:e,sameOrigin:t,request:a,event:r});if(i)return Array.isArray(n=i)&&0===n.length||i.constructor===Object&&0===Object.keys(i).length?n=void 0:"boolean"==typeof i&&(n=void 0),{route:s,params:n}}return{}}}async function eg(e){try{(await self.clients.matchAll({type:"window",includeUncontrolled:!0})).forEach(t=>{t.postMessage(e)})}catch{}}new ew({precacheEntries:[{'revision':'688f558f64d4cea6e70f2168567ff870','url':'/_next/static/QlGUAmHQpz0OwI5Hie_0H/_buildManifest.js'},{'revision':'b6652df95db52feb4daf4eca35380933','url':'/_next/static/QlGUAmHQpz0OwI5Hie_0H/_ssgManifest.js'},{'revision':null,'url':'/_next/static/chunks/4bd1b696-096d35a2bd1da3af.js'},{'revision':null,'url':'/_next/static/chunks/511-ba6b532e8fefb48f.js'},{'revision':null,'url':'/_next/static/chunks/798-18944a9dbdb97c80.js'},{'revision':null,'url':'/_next/static/chunks/855-2af8dbe476adf5d2.js'},{'revision':null,'url':'/_next/static/chunks/app/_global-error/page-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/_not-found/page-5225742f60b16645.js'},{'revision':null,'url':'/_next/static/chunks/app/api/azkar/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/goals/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/hadith/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/prayer/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/push/cron/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/push/subscribe/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/push/unsubscribe/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/push/vapid/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/quran/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/radio/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/api/sw-settings/route-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/app/layout-5e15f6eb1fad0976.js'},{'revision':null,'url':'/_next/static/chunks/app/page-082019d973b4712e.js'},{'revision':null,'url':'/_next/static/chunks/framework-75892d61b920805f.js'},{'revision':null,'url':'/_next/static/chunks/main-89580373ebd91d69.js'},{'revision':null,'url':'/_next/static/chunks/main-app-a01e763b87d45a1f.js'},{'revision':null,'url':'/_next/static/chunks/next/dist/client/components/builtin/app-error-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/next/dist/client/components/builtin/forbidden-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/next/dist/client/components/builtin/global-error-af56344d91cf4ff5.js'},{'revision':null,'url':'/_next/static/chunks/next/dist/client/components/builtin/not-found-f52a64a9b7d1bcad.js'},{'revision':null,'url':'/_next/static/chunks/next/dist/client/components/builtin/unauthorized-f52a64a9b7d1bcad.js'},{'revision':'846118c33b2c0e922d7b3a7676f81f6f','url':'/_next/static/chunks/polyfills-42372ed130431b0a.js'},{'revision':null,'url':'/_next/static/chunks/webpack-52d428ccd66bfe75.js'},{'revision':null,'url':'/_next/static/css/3285a77ef3d91bf1.css'},{'revision':'bcf65bed2aa8ca6459903f083c9225fe','url':'/audio/adhan-algeria.mp3'},{'revision':'62ce88fb38ee18f9e111901dc4b76518','url':'/audio/adhan-makka.mp3'},{'revision':'ad1d7854411be48c4a2311d98ed32688','url':'/audio/adhan-rashed.mp3'},{'revision':'5553de24419f1f05cda2ac3275759ac4','url':'/audio/salawat.mp3'},{'revision':'a27ad1caade8c610290e1f008f7b48d6','url':'/icon.png'},{'revision':'b83d248da00c1925e4ded334fefef3b9','url':'/logo.png'},{'revision':'42f46ee1967225126315578016f0f9b6','url':'/logo.svg'},{'revision':'2117afb5f4bd2b908dec13092b88765c','url':'/manifest.json'},{'revision':'f9dff89adf98833e676de2205921996a','url':'/robots.txt'},{'revision':'54cd1961212f8e1d71e6d704cf82de1b','url':'/test.html'}],skipWaiting:!0,clientsClaim:!0,navigationPreload:!0,runtimeCaching:[{matcher:({url:e})=>e.href.startsWith("https://fonts.gstatic.com/"),handler:new ef({cacheName:"google-fonts-webfonts",plugins:[]})},{matcher:({url:e})=>e.href.startsWith("https://fonts.googleapis.com/"),handler:new ef({cacheName:"google-fonts-stylesheets",plugins:[]})},{matcher:({url:e})=>/\.(eot|otf|ttc|ttf|woff|woff2|font\.css)$/i.test(e.pathname),handler:new ef({cacheName:"static-font-assets",plugins:[]})},{matcher:({url:e})=>/\.(jpg|jpeg|gif|png|svg|ico|webp)$/i.test(e.pathname),handler:new ef({cacheName:"static-image-assets",plugins:[]})},{matcher:({url:e})=>e.pathname.startsWith("/_next/image")&&e.search.includes("url="),handler:new X({cacheName:"next-image",plugins:[]})},{matcher:({url:e})=>/\.(mp3|wav|ogg)$/i.test(e.pathname),handler:new ef({cacheName:"static-audio-assets",plugins:[]})},{matcher:({url:e})=>e.pathname.endsWith(".js"),handler:new X({cacheName:"static-js-assets",plugins:[]})},{matcher:({url:e})=>/\.(css|less)$/i.test(e.pathname),handler:new X({cacheName:"static-style-assets",plugins:[]})},{matcher:({url:e})=>/^\/_next\/data\/.+\/.+\.json$/i.test(e.pathname),handler:new X({cacheName:"next-data",plugins:[]})}]}).addEventListeners();let em={Fajr:"الفجر",Dhuhr:"الظهر",Asr:"العصر",Maghrib:"المغرب",Isha:"العشاء"};async function e_(){let e=await caches.match("/api/prayer-cache");if(!e)return null;try{return await e.json()}catch{return null}}async function eb(e){let t=new Response(JSON.stringify(e),{headers:{"Content-Type":"application/json"}});await caches.open("zad-muslim-cache").then(e=>{e.put("/api/prayer-cache",t)})}async function ev(){let e=await caches.match("/api/settings-cache");if(!e)return{adhanEnabled:!0,reminderEnabled:!1,reminderMinutes:10,salawatEnabled:!1,salawatInterval:5,lastSalawatSent:""};try{return await e.json()}catch{return{adhanEnabled:!0,reminderEnabled:!1,reminderMinutes:10,salawatEnabled:!1,salawatInterval:5,lastSalawatSent:""}}}async function eS(e){let t=new Response(JSON.stringify(e),{headers:{"Content-Type":"application/json"}});await caches.open("zad-muslim-cache").then(e=>{e.put("/api/settings-cache",t)})}function eR(e){if(!e)return null;let t=e.replace(/\s*\(.*?\)/,"").trim().split(":"),a=parseInt(t[0],10),r=parseInt(t[1],10);return isNaN(a)||isNaN(r)?null:{h:a,m:r}}function eq(e,t,a,r=!1,s=[200,100,200]){self.registration.showNotification(e,{body:t,icon:"/icon.png",badge:"/icon.png",vibrate:s,tag:a,renotify:!0,requireInteraction:r,actions:[{action:"dismiss",title:"إغلاق"}],data:{url:"/",type:a.split("-")[0]}})}async function eE(){let e=await e_(),t=await ev();if(!e||!e.timings)return void console.log("[SW] No cached prayer times, skipping offline check");let a=new Date,r=60*a.getHours()+a.getMinutes(),s=a.toISOString().slice(0,10),n=["Fajr","Dhuhr","Asr","Maghrib","Isha"];if(t.adhanEnabled)for(let a of n){let n=eR(e.timings[a]);if(n&&1>=Math.abs(r-(60*n.h+n.m))){let e=`adhan-${a}-${s}`,r=`sent-adhan-${a}-${s}`;if(await caches.match(`/api/${r}`))continue;eq("حان وقت الصلاة",`حان وقت صلاة ${em[a]} — الله أكبر`,e,!0,[200,100,200,100,200,100,200]),await eg({type:"PLAY_ADHAN",prayer:a,sound:t.adhanSound||"rashed"}),await caches.open("zad-muslim-cache").then(e=>{e.put(`/api/${r}`,new Response("sent"))}),console.log(`[SW] ✅ Offline adhan: ${em[a]}`)}}if(t.reminderEnabled)for(let a of n){let n=eR(e.timings[a]);if(!n)continue;let i=60*n.h+n.m-t.reminderMinutes;if(i>0&&1>=Math.abs(r-i)){let e=`reminder-${a}-${s}`,r=`sent-reminder-${a}-${s}`;if(await caches.match(`/api/${r}`))continue;eq("تذكير بالصلاة",`باقي ${t.reminderMinutes} دقيقة على صلاة ${em[a]}`,e,!0,[200,100,200]),await caches.open("zad-muslim-cache").then(e=>{e.put(`/api/${r}`,new Response("sent"))}),console.log(`[SW] ✅ Offline reminder: ${em[a]} (-${t.reminderMinutes}m)`)}}}async function eP(){let e=await ev();if(!e.salawatEnabled||e.salawatInterval<=0)return;let t=new Date,a=60*t.getHours()+t.getMinutes(),r=t.toISOString().slice(0,10),s=`${r}-${Math.floor(a/e.salawatInterval)}`;e.lastSalawatSent!==s&&(eq("اللهم صلِّ على محمد ﷺ","لا تنسَ الصلاة على النبي ﷺ",`salawat-${s}`,!1,[200,100,200]),await eg({type:"PLAY_SALAWAT"}),await eS({...e,lastSalawatSent:s}),console.log("[SW] ✅ Offline salawat notification"))}self.addEventListener("install",e=>{console.log("[SW] Service Worker installed"),self.skipWaiting()}),self.addEventListener("activate",e=>{console.log("[SW] Service Worker activated"),e.waitUntil(clients.claim()),"periodicSync"in self.registration?self.registration.periodicSync.register("prayer-check",{minInterval:6e4}).then(()=>{console.log("[SW] Periodic Background Sync registered ✅")}).catch(e=>{console.log("[SW] Periodic Background Sync not available:",e.message)}):console.log("[SW] Periodic Background Sync API not supported in this browser"),"periodicSync"in self.registration&&self.registration.periodicSync.register("salawat-check",{minInterval:3e5}).then(()=>{console.log("[SW] Salawat Periodic Sync registered ✅")}).catch(e=>{console.log("[SW] Salawat Periodic Sync not available:",e.message)})}),self.addEventListener("periodicsync",async e=>{console.log("[SW] Periodic sync triggered:",e.tag),"prayer-check"===e.tag?e.waitUntil(eE()):"salawat-check"===e.tag&&e.waitUntil(eP())}),self.addEventListener("push",e=>{console.log("[SW] Push received from server");let t={};try{t=e.data?.json()||{}}catch{t={title:"زاد مسلم",body:e.data?.text()||""}}let{title:a,body:r,icon:s,prayer:n,type:i}=t,c="adhan"===i?`adhan-${n||"unknown"}`:"reminder"===i?`reminder-${n||"unknown"}`:"salawat"===i?"salawat-reminder":"zad-muslim-notification";e.waitUntil(self.registration.showNotification(a||"زاد مسلم",{body:r||"",icon:s||"/icon.png",badge:"/icon.png",vibrate:"adhan"===i?[200,100,200,100,200,100,200]:[200,100,200],tag:c,renotify:!0,requireInteraction:"adhan"===i||"reminder"===i,actions:[{action:"dismiss",title:"إغلاق"}],data:{url:"/",prayer:n||"",type:i||"general"}}).then(()=>"adhan"===i?eg({type:"PLAY_ADHAN",prayer:n||"",sound:"rashed"}):"salawat"===i?eg({type:"PLAY_SALAWAT"}):void 0))}),self.addEventListener("notificationclick",e=>{console.log("[SW] Notification clicked:",e.notification.tag),e.notification.close();let t=e.notification.data||{},a=t.type||"",r=t.prayer||"";e.waitUntil(clients.matchAll({type:"window",includeUncontrolled:!0}).then(e=>{for(let t of e)if(t.url.includes("/")&&"focus"in t){t.focus(),"adhan"===a&&t.postMessage({type:"PLAY_ADHAN",prayer:r,sound:"rashed"});return}if(clients.openWindow)return clients.openWindow("/")}))}),self.addEventListener("fetch",e=>{new URL(e.request.url).pathname.startsWith("/api/prayer")&&"GET"===e.request.method&&e.respondWith(fetch(e.request).then(e=>(e.clone().json().then(e=>{eb(e),console.log("[SW] Cached prayer times for offline use")}).catch(()=>{}),e)).catch(()=>caches.match("/api/prayer-cache").then(e=>e?(console.log("[SW] Serving cached prayer times"),e):new Response(JSON.stringify({error:"No cached data"}),{status:503,headers:{"Content-Type":"application/json"}}))))})})();
+// Zad Muslim - Service Worker for Push Notifications + Background Sync
+// Handles:
+// 1. Push notifications from Vercel server (when online)
+// 2. Periodic Background Sync (when offline — no server needed!)
+
+const PRAYER_AR = {
+  Fajr: 'الفجر',
+  Dhuhr: 'الظهر',
+  Asr: 'العصر',
+  Maghrib: 'المغرب',
+  Isha: 'العشاء',
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  LOCAL STORAGE HELPERS (for offline prayer times cache)
+// ═══════════════════════════════════════════════════════════════
+
+async function getCachedPrayerTimes() {
+  const data = await caches.match('/api/prayer-cache');
+  if (!data) return null;
+  try {
+    return await data.json();
+  } catch {
+    return null;
+  }
+}
+
+async function cachePrayerTimes(timings: object) {
+  const response = new Response(JSON.stringify(timings), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  await caches.open('zad-muslim-cache').then((cache) => {
+    cache.put('/api/prayer-cache', response);
+  });
+}
+
+async function getSettings() {
+  const data = await caches.match('/api/settings-cache');
+  if (!data) return {
+    adhanEnabled: true,
+    reminderEnabled: false,
+    reminderMinutes: 10,
+    salawatEnabled: false,
+    salawatInterval: 5,
+    lastSalawatSent: '',
+  };
+  try {
+    return await data.json();
+  } catch {
+    return {
+      adhanEnabled: true,
+      reminderEnabled: false,
+      reminderMinutes: 10,
+      salawatEnabled: false,
+      salawatInterval: 5,
+      lastSalawatSent: '',
+    };
+  }
+}
+
+async function saveSettings(settings: object) {
+  const response = new Response(JSON.stringify(settings), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  await caches.open('zad-muslim-cache').then((cache) => {
+    cache.put('/api/settings-cache', response);
+  });
+}
+
+function parseTime(timeStr: string): { h: number; m: number } | null {
+  if (!timeStr) return null;
+  const cleaned = timeStr.replace(/\s*\(.*?\)/, '').trim();
+  const parts = cleaned.split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return { h, m };
+}
+
+function showNotif(title: string, body: string, tag: string, requireInteraction: boolean = false, vibrate: number[] = [200, 100, 200]) {
+  self.registration.showNotification(title, {
+    body,
+    icon: '/icon.png',
+    badge: '/icon.png',
+    vibrate,
+    tag,
+    renotify: true,
+    requireInteraction,
+    actions: [{ action: 'dismiss', title: 'إغلاق' }],
+    data: { url: '/', type: tag.split('-')[0] },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INSTALL & ACTIVATE
+// ═══════════════════════════════════════════════════════════════
+
+self.addEventListener('install', (event) => {
+  console.log('[SW] Service Worker installed');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Service Worker activated');
+  event.waitUntil(clients.claim());
+
+  // Register periodic background sync for offline notifications
+  if ('periodicSync' in self.registration) {
+    self.registration.periodicSync.register('prayer-check', {
+      minInterval: 60 * 1000, // every minute
+    }).then(() => {
+      console.log('[SW] Periodic Background Sync registered ✅');
+    }).catch((err: Error) => {
+      console.log('[SW] Periodic Background Sync not available:', err.message);
+    });
+  } else {
+    console.log('[SW] Periodic Background Sync API not supported in this browser');
+  }
+
+  // Also register salawat sync if enabled
+  if ('periodicSync' in self.registration) {
+    self.registration.periodicSync.register('salawat-check', {
+      minInterval: 5 * 60 * 1000, // every 5 minutes (minimum allowed)
+    }).then(() => {
+      console.log('[SW] Salawat Periodic Sync registered ✅');
+    }).catch((err: Error) => {
+      console.log('[SW] Salawat Periodic Sync not available:', err.message);
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  PERIODIC BACKGROUND SYNC — Works WITHOUT internet!
+// ═══════════════════════════════════════════════════════════════
+
+self.addEventListener('periodicsync', async (event) => {
+  console.log('[SW] Periodic sync triggered:', event.tag);
+
+  if (event.tag === 'prayer-check') {
+    event.waitUntil(checkPrayerTimesOffline());
+  } else if (event.tag === 'salawat-check') {
+    event.waitUntil(checkSalawatOffline());
+  }
+});
+
+// Check prayer times from cached data (no internet needed!)
+async function checkPrayerTimesOffline() {
+  const cached = await getCachedPrayerTimes();
+  const settings = await getSettings();
+
+  if (!cached || !cached.timings) {
+    console.log('[SW] No cached prayer times, skipping offline check');
+    return;
+  }
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentDateStr = now.toISOString().slice(0, 10);
+  const prayerKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
+
+  // ─── Adhan: at exact prayer time ───
+  if (settings.adhanEnabled) {
+    for (const prayer of prayerKeys) {
+      const parsed = parseTime(cached.timings[prayer]);
+      if (!parsed) continue;
+
+      const prayerMinutes = parsed.h * 60 + parsed.m;
+      const diff = Math.abs(currentMinutes - prayerMinutes);
+
+      if (diff <= 1) {
+        const adhanTag = `adhan-${prayer}-${currentDateStr}`;
+        // Check if we already sent this notification today
+        const sentKey = `sent-adhan-${prayer}-${currentDateStr}`;
+        const sentData = await caches.match(`/api/${sentKey}`);
+        if (sentData) continue; // Already sent
+
+        showNotif(
+          'حان وقت الصلاة',
+          `حان وقت صلاة ${PRAYER_AR[prayer]} — الله أكبر`,
+          adhanTag,
+          true,
+          [200, 100, 200, 100, 200, 100, 200]
+        );
+
+        // Mark as sent
+        await caches.open('zad-muslim-cache').then((cache) => {
+          cache.put(`/api/${sentKey}`, new Response('sent'));
+        });
+
+        console.log(`[SW] ✅ Offline adhan: ${PRAYER_AR[prayer]}`);
+      }
+    }
+  }
+
+  // ─── Prayer Reminder: X minutes before prayer ───
+  if (settings.reminderEnabled) {
+    for (const prayer of prayerKeys) {
+      const parsed = parseTime(cached.timings[prayer]);
+      if (!parsed) continue;
+
+      const prayerMinutes = parsed.h * 60 + parsed.m;
+      const reminderMinutes = prayerMinutes - settings.reminderMinutes;
+
+      if (reminderMinutes > 0) {
+        const diff = Math.abs(currentMinutes - reminderMinutes);
+        if (diff <= 1) {
+          const reminderTag = `reminder-${prayer}-${currentDateStr}`;
+          const sentKey = `sent-reminder-${prayer}-${currentDateStr}`;
+          const sentData = await caches.match(`/api/${sentKey}`);
+          if (sentData) continue;
+
+          showNotif(
+            'تذكير بالصلاة',
+            `باقي ${settings.reminderMinutes} دقيقة على صلاة ${PRAYER_AR[prayer]}`,
+            reminderTag,
+            true,
+            [200, 100, 200]
+          );
+
+          await caches.open('zad-muslim-cache').then((cache) => {
+            cache.put(`/api/${sentKey}`, new Response('sent'));
+          });
+
+          console.log(`[SW] ✅ Offline reminder: ${PRAYER_AR[prayer]} (-${settings.reminderMinutes}m)`);
+        }
+      }
+    }
+  }
+}
+
+// Check salawat from cached settings (no internet needed!)
+async function checkSalawatOffline() {
+  const settings = await getSettings();
+
+  if (!settings.salawatEnabled || settings.salawatInterval <= 0) return;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentDateStr = now.toISOString().slice(0, 10);
+  const salawatSlot = `${currentDateStr}-${Math.floor(currentMinutes / settings.salawatInterval)}`;
+
+  if (settings.lastSalawatSent === salawatSlot) return; // Already sent
+
+  showNotif(
+    'اللهم صلِّ على محمد ﷺ',
+    'لا تنسَ الصلاة على النبي ﷺ',
+    `salawat-${salawatSlot}`,
+    false,
+    [200, 100, 200]
+  );
+
+  // Update lastSalawatSent
+  await saveSettings({ ...settings, lastSalawatSent: salawatSlot });
+  console.log('[SW] ✅ Offline salawat notification');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PUSH NOTIFICATIONS — From Vercel server (when online)
+// ═══════════════════════════════════════════════════════════════
+
+self.addEventListener('push', (event) => {
+  console.log('[SW] Push received from server');
+
+  let data = {};
+  try {
+    data = event.data?.json() || {};
+  } catch {
+    data = { title: 'زاد مسلم', body: event.data?.text() || '' };
+  }
+
+  const { title, body, icon, prayer, type } = data;
+
+  const notificationTitle = title || 'زاد مسلم';
+  const notificationBody = body || '';
+  const notificationTag = type === 'adhan'
+    ? `adhan-${prayer || 'unknown'}`
+    : type === 'reminder'
+    ? `reminder-${prayer || 'unknown'}`
+    : type === 'salawat'
+    ? 'salawat-reminder'
+    : 'zad-muslim-notification';
+
+  const requireInteraction = type === 'adhan' || type === 'reminder';
+  const vibrate = type === 'adhan'
+    ? [200, 100, 200, 100, 200, 100, 200]
+    : [200, 100, 200];
+
+  event.waitUntil(
+    self.registration.showNotification(notificationTitle, {
+      body: notificationBody,
+      icon: icon || '/icon.png',
+      badge: '/icon.png',
+      vibrate,
+      tag: notificationTag,
+      renotify: true,
+      requireInteraction,
+      actions: [{ action: 'dismiss', title: 'إغلاق' }],
+      data: { url: '/', prayer: prayer || '', type: type || 'general' },
+    })
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  NOTIFICATION CLICK
+// ═══════════════════════════════════════════════════════════════
+
+self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked:', event.notification.tag);
+  event.notification.close();
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('/') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  FETCH — Cache prayer times + settings for offline use
+// ═══════════════════════════════════════════════════════════════
+
+self.addEventListener('fetch', (event) => {
+  // Cache prayer times responses for offline use
+  const url = new URL(event.request.url);
+
+  if (url.pathname.startsWith('/api/prayer') && event.request.method === 'GET') {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        // Clone and cache the response
+        const cloned = response.clone();
+        cloned.json().then((data) => {
+          cachePrayerTimes(data);
+          console.log('[SW] Cached prayer times for offline use');
+        }).catch(() => {});
+        return response;
+      }).catch(() => {
+        // If offline, try to serve cached data
+        return caches.match('/api/prayer-cache').then((cached) => {
+          if (cached) {
+            console.log('[SW] Serving cached prayer times');
+            return cached;
+          }
+          return new Response(JSON.stringify({ error: 'No cached data' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+      })
+    );
+  }
+});
