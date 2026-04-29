@@ -30,19 +30,10 @@ const PRAYER_AR: Record<string, string> = {
 
 async function fetchPrayerTimes(lat: number, lng: number, method: number, school: number): Promise<PrayerTimes> {
   const url = `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lng}&method=${method}&school=${school}`;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`AlAdhan API error: ${res.status}`);
-    const json = await res.json();
-    return json.data?.timings || {};
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`AlAdhan API error: ${res.status}`);
+  const json = await res.json();
+  return json.data?.timings || {};
 }
 
 function parseTime(timeStr: string): { h: number; m: number } | null {
@@ -99,13 +90,7 @@ export async function GET() {
 
         // Fetch prayer times if adhan or reminder is enabled
         if (sub.adhanEnabled || sub.reminderEnabled) {
-          try {
-            timings = await fetchPrayerTimes(sub.lat, sub.lng, sub.method, sub.madhab);
-          } catch (error) {
-            // On timeout or network error, skip this subscriber's prayer-dependent notifications
-            console.warn(`[Push Cron] Timeout/error fetching prayer times for ${sub.endpoint.slice(0, 40)}..., skipping this batch`);
-            continue;
-          }
+          timings = await fetchPrayerTimes(sub.lat, sub.lng, sub.method, sub.madhab);
         }
 
         // ─── 1) Adhan: at exact prayer time ───

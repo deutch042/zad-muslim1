@@ -28,7 +28,7 @@ const DEFAULT_GOAL = {
   notes: '',
 };
 
-const goals = new Map<string, typeof DEFAULT_GOAL & { date?: string }>();
+const goals = new Map<string, typeof DEFAULT_GOAL>();
 
 function getTodayDate(dateParam?: string): string {
   if (dateParam) return dateParam;

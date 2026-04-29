@@ -1,9 +1,6 @@
-import { NextResponse } from 'next/server';
-import { getCached, setCache } from '@/lib/cache';
+// Hadith data module — replaces /api/hadith route for static export.
+// Contains daily rotating hadiths and collection data, computed on the client.
 
-const HADITH_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
-
-// Daily hadith collection from Al-Hadith API alternatives
 const DAILY_HADITHS = [
   {
     textAr: "إنَّما الأعمالُ بالنِّيَّاتِ، وإنَّما لكُلِّ امرئٍ ما نَوى",
@@ -111,8 +108,8 @@ const DAILY_HADITHS = [
     grade: "صحيح",
   },
   {
-    textAr: "Acquaint yourselves with Allah in times of prosperity, He will know you in times of adversity",
-    textEn: "تعرَّف إلى الله في الرخاء يعرفك في الشدة",
+    textAr: "تَعَرَّفُوا إِلَى اللَّهِ فِي الرَّخَاءِ يَعْرِفْكُمْ فِي الشِّدَّةِ",
+    textEn: "Acquaint yourselves with Allah in times of prosperity, He will know you in times of adversity.",
     narrator: "ابن عباس رضي الله عنهما",
     source: "المستدرك",
     grade: "حسن",
@@ -145,16 +142,8 @@ const DAILY_HADITHS = [
     source: "صحيح البخاري ومسلم",
     grade: "صحيح",
   },
-  {
-    textAr: "مَن جَدَّدَ تَوبَةً غُفِرَ لَهُ",
-    textEn: "Whoever renews his repentance, his sins will be forgiven.",
-    narrator: "الحسن البصري رحمه الله",
-    source: "صحيح الجامع",
-    grade: "صحيح",
-  },
 ];
 
-// Hadith collection data
 const HADITH_COLLECTIONS = [
   {
     id: 1,
@@ -200,26 +189,15 @@ const HADITH_COLLECTIONS = [
   },
 ];
 
-export async function GET() {
-  try {
-    // Get daily hadith based on day of year (rotates daily)
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 0);
-    const diff = now.getTime() - start.getTime();
-    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hadithIndex = dayOfYear % DAILY_HADITHS.length;
-    const dailyHadith = DAILY_HADITHS[hadithIndex];
-
-    return NextResponse.json({
-      daily: dailyHadith,
-      collections: HADITH_COLLECTIONS,
-      totalHadiths: DAILY_HADITHS.length,
-    });
-  } catch (error) {
-    console.error('Hadith API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch hadith data.' },
-      { status: 500 }
-    );
-  }
+export function getDailyHadith() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hadithIndex = dayOfYear % DAILY_HADITHS.length;
+  return {
+    daily: DAILY_HADITHS[hadithIndex],
+    collections: HADITH_COLLECTIONS,
+    totalHadiths: DAILY_HADITHS.length,
+  };
 }

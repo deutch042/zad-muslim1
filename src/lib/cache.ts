@@ -1,52 +1,56 @@
-interface CacheEntry<T> {
-  value: T;
-  expiry: number;
+type CacheEntry<T> = {
+  data: T;
+  expires: number;
+  timestamp: number;
+};
+
+const MAX_CACHE_SIZE = 100;
+const cache = new Map<string, CacheEntry<unknown>>();
+
+function evictLRU(): void {
+  if (cache.size >= MAX_CACHE_SIZE) {
+    let oldestKey: string | null = null;
+    let oldestTimestamp = Infinity;
+    for (const [key, entry] of cache.entries()) {
+      if (entry.timestamp < oldestTimestamp) {
+        oldestTimestamp = entry.timestamp;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) {
+      cache.delete(oldestKey);
+    }
+  }
 }
 
-const cache = new Map<string, CacheEntry<any>>();
-
-/**
- * Get a value from the cache.
- * @param key The cache key
- * @param ttl The maximum age in milliseconds (optional)
- * @returns The cached value or null if not found or expired
- */
-export function getCached<T>(key: string, ttl?: number): T | null {
-  const entry = cache.get(key);
-  
-  if (!entry) return null;
-  
+export function getCached<T>(key: string, ttlMs: number): T | null {
   const now = Date.now();
-  
-  // If a specific TTL was provided for this get, check against entry creation
-  if (ttl !== undefined && now - (entry.expiry - (ttl)) > ttl) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (now > entry.expires) {
     cache.delete(key);
     return null;
   }
+  const updatedEntry = { ...entry, timestamp: now };
+  cache.set(key, updatedEntry);
+  return entry.data as T;
+}
 
-  // Check against absolute expiry
-  if (now > entry.expiry) {
-    cache.delete(key);
-    return null;
+export function setCache<T>(key: string, data: T, ttlMs: number): void {
+  evictLRU();
+  cache.set(key, {
+    data,
+    expires: Date.now() + ttlMs,
+    timestamp: Date.now(),
+  });
+}
+
+export function clearCache(pattern?: string): void {
+  if (!pattern) {
+    cache.clear();
+    return;
   }
-  
-  return entry.value as T;
-}
-
-/**
- * Set a value in the cache.
- * @param key The cache key
- * @param value The value to cache
- * @param ttl The time-to-live in milliseconds
- */
-export function setCache<T>(key: string, value: T, ttl: number = 3600000): void {
-  const expiry = Date.now() + ttl;
-  cache.set(key, { value, expiry });
-}
-
-/**
- * Clear the entire cache.
- */
-export function clearCache(): void {
-  cache.clear();
+  for (const key of cache.keys()) {
+    if (key.includes(pattern)) cache.delete(key);
+  }
 }

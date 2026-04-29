@@ -2,42 +2,36 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSettingsStore } from '@/store/settings-store';
-import { isAudioUnlocked } from '@/lib/audio-session';
 
 export function useSalawatTimer() {
-  const { salawatEnabled, salawatInterval, salawatSound, isLoaded } = useSettingsStore();
+  const { salawatEnabled, salawatInterval, isLoaded } = useSettingsStore();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playCount, setPlayCount] = useState(0);
 
   // Create ONE audio element, load it once
   useEffect(() => {
-    const audioPath = `/audio/salawat.mp3`;
-    const audio = new Audio(audioPath);
+    const audio = new Audio('/audio/salawat.mp3');
     audio.volume = 0.8;
     audio.preload = 'auto';
     audioRef.current = audio;
 
     // Log for debugging
     audio.addEventListener('canplaythrough', () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[SalawatTimer] Audio loaded and ready');
-      }
+      console.log('[SalawatTimer] Audio loaded and ready');
     });
     audio.addEventListener('error', (e) => {
       console.error('[SalawatTimer] Audio error:', e);
     });
     audio.addEventListener('playing', () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[SalawatTimer] ▶ Playing salawat');
-      }
+      console.log('[SalawatTimer] ▶ Playing salawat');
     });
 
     return () => {
       audio.pause();
       audioRef.current = null;
     };
-  }, [salawatSound]);
+  }, []);
 
   // Play function
   const playSalawat = useCallback(() => {
@@ -47,27 +41,13 @@ export function useSalawatTimer() {
       return;
     }
 
-    const adhanAudio = document.querySelector('audio[src*="adhan"]') as HTMLAudioElement | null;
-    if (adhanAudio && !adhanAudio.paused) {
-      return;
-    }
-
-    if (!isAudioUnlocked()) {
-      window.dispatchEvent(new CustomEvent('audio-unlock-needed'));
-      return;
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[SalawatTimer] playSalawat() called, currentSrc:', audio.currentSrc);
-    }
+    console.log('[SalawatTimer] playSalawat() called, currentSrc:', audio.currentSrc);
     audio.currentTime = 0;
 
     const playPromise = audio.play();
     if (playPromise) {
       playPromise.then(() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[SalawatTimer] ✓ play() succeeded');
-        }
+        console.log('[SalawatTimer] ✓ play() succeeded');
         setPlayCount(c => c + 1);
       }).catch((err) => {
         console.warn('[SalawatTimer] ✗ play() rejected:', err.message);
@@ -75,37 +55,36 @@ export function useSalawatTimer() {
     }
   }, []);
 
-  // Interval timer
+  // Interval timer — with immediate play when interval changes
   useEffect(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
-    if (salawatEnabled && isLoaded) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[SalawatTimer] Starting interval: every ${salawatInterval} min`);
-      }
-
-      // Request notification permission in background
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission()
-          .then((permission) => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[SalawatTimer] Notification permission:', permission);
-            }
-          })
-          .catch(() => {
-            // Silently ignored - user denied or not supported
-          });
-      }
-
-      timerRef.current = setInterval(playSalawat, salawatInterval * 60 * 1000);
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[SalawatTimer] Timer off (enabled=${salawatEnabled}, loaded=${isLoaded})`);
-      }
+    if (!salawatEnabled || !isLoaded) {
+      console.log(`[SalawatTimer] Timer off (enabled=${salawatEnabled}, loaded=${isLoaded})`);
+      return undefined;
     }
+
+    console.log(`[SalawatTimer] Starting interval: every ${salawatInterval} min`);
+
+    // Request notification permission in background
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+        .then((permission) => {
+          console.log('[SalawatTimer] Notification permission:', permission);
+        })
+        .catch(() => {
+          // Silently ignored - user denied or not supported
+        });
+    }
+
+    // Play immediately when timer starts or interval changes
+    playSalawat();
+
+    // Then set interval for future plays
+    timerRef.current = setInterval(playSalawat, salawatInterval * 60 * 1000);
 
     return () => {
       if (timerRef.current) {
@@ -113,7 +92,7 @@ export function useSalawatTimer() {
         timerRef.current = null;
       }
     };
-  }, [salawatEnabled, salawatInterval, salawatSound, isLoaded, playSalawat]);
+  }, [salawatEnabled, salawatInterval, isLoaded, playSalawat]);
 
   return { playSalawat, playCount };
 }

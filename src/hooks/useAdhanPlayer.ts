@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { usePrayerTimes } from '@/hooks/usePrayerTimes';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
-import { isAudioUnlocked, getAudioContext } from '@/lib/audio-session';
 
 // Map adhan sound setting to actual audio file path
 const ADHAN_FILES: Record<string, string> = {
@@ -17,7 +16,7 @@ const ADHAN_FILES: Record<string, string> = {
 function playDefaultAdhan() {
   console.log('[AdhanPlayer] Playing default Web Audio adhan');
   try {
-    const ctx = getAudioContext();
+    const ctx = new AudioContext();
 
     const playNote = (freq: number, startTime: number, duration: number, vol: number = 0.25) => {
       const osc = ctx.createOscillator();
@@ -36,26 +35,124 @@ function playDefaultAdhan() {
 
     const t = ctx.currentTime;
 
+    // Opening takbeer phrase
     playNote(261.63, t, 0.8, 0.3);
     playNote(329.63, t + 0.6, 0.6, 0.25);
     playNote(392.00, t + 1.0, 0.8, 0.25);
     playNote(523.25, t + 1.6, 1.2, 0.3);
 
+    // Main melodic phrase
     playNote(392.00, t + 3.0, 0.8, 0.25);
     playNote(440.00, t + 3.6, 0.8, 0.25);
     playNote(523.25, t + 4.2, 1.0, 0.28);
     playNote(587.33, t + 5.0, 0.6, 0.22);
     playNote(523.25, t + 5.4, 1.2, 0.28);
 
+    // Second phrase
     playNote(392.00, t + 7.0, 0.8, 0.25);
     playNote(523.25, t + 7.6, 1.2, 0.3);
     playNote(587.33, t + 8.6, 0.6, 0.22);
     playNote(659.25, t + 9.0, 1.5, 0.3);
 
+    // Final resolve
     playNote(523.25, t + 10.8, 0.6, 0.25);
     playNote(587.33, t + 11.2, 0.6, 0.25);
     playNote(523.25, t + 11.6, 2.0, 0.35);
-  } catch {}
+
+    setTimeout(() => ctx.close(), 15000);
+  } catch {
+    // Audio context not available
+  }
+}
+
+// Play adhan from audio file
+function playAdhanFile(soundName: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const filePath = ADHAN_FILES[soundName];
+    if (!filePath) {
+      console.log(`[AdhanPlayer] No file mapping for "${soundName}"`);
+      resolve(false);
+      return;
+    }
+
+    console.log(`[AdhanPlayer] Loading adhan file: ${filePath}`);
+    const audio = new Audio(filePath);
+    audio.volume = 0.9;
+
+    const onReady = () => {
+      cleanup();
+      console.log(`[AdhanPlayer] ✅ Playing ${filePath}`);
+      audio.play().then(() => resolve(true)).catch((err) => {
+        console.log(`[AdhanPlayer] ✗ play() rejected:`, err.message);
+        resolve(false);
+      });
+    };
+    const onFail = (e: Event) => {
+      cleanup();
+      console.log(`[AdhanPlayer] ✗ Error loading ${filePath}:`, (e as ErrorEvent).message);
+      resolve(false);
+    };
+    const cleanup = () => {
+      audio.removeEventListener('canplaythrough', onReady);
+      audio.removeEventListener('error', onFail);
+    };
+    audio.addEventListener('canplaythrough', onReady);
+    audio.addEventListener('error', onFail);
+
+    // If already loaded, play immediately
+    if (audio.readyState >= 3) {
+      cleanup();
+      audio.play().then(() => {
+        console.log(`[AdhanPlayer] ✅ Playing (readyState) ${filePath}`);
+        resolve(true);
+      }).catch((err) => {
+        console.log(`[AdhanPlayer] ✗ play() rejected (readyState):`, err.message);
+        resolve(false);
+      });
+      return;
+    }
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      cleanup();
+      console.log(`[AdhanPlayer] ⏱ Timeout loading ${filePath}`);
+      resolve(false);
+    }, 5000);
+    audio.load();
+  });
+}
+
+// Export a standalone play function for the test button (runs in user gesture context)
+export function playAdhanTest(prayerNameAr: string) {
+  const currentSound = useSettingsStore.getState().adhanSound;
+  console.log(`[AdhanPlayer] 🧪 TEST — sound setting: ${currentSound}`);
+
+  // Play audio FIRST — synchronous with user gesture
+  if (currentSound !== 'default') {
+    const filePath = ADHAN_FILES[currentSound];
+    if (filePath) {
+      console.log(`[AdhanPlayer] 🧪 Playing file: ${filePath}`);
+      const audio = new Audio(filePath);
+      audio.volume = 0.9;
+      audio.play().then(() => {
+        console.log(`[AdhanPlayer] 🧪 ✅ File playing: ${filePath}`);
+      }).catch((err) => {
+        console.log(`[AdhanPlayer] 🧪 ✗ File failed: ${err.message}, trying default`);
+        playDefaultAdhan();
+      });
+    } else {
+      playDefaultAdhan();
+    }
+  } else {
+    playDefaultAdhan();
+  }
+
+  // Then show toast
+  window.dispatchEvent(
+    new CustomEvent('adhan-playing', {
+      detail: { prayerName: 'Test', prayerNameAr },
+    })
+  );
 }
 
 const prayerArabic: Record<string, string> = {
@@ -71,90 +168,6 @@ export function useAdhanPlayer() {
   const { adhanEnabled, adhanSound, isLoaded } = useSettingsStore();
   const notifiedPrayerRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
-  // Persistent audio element
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  useEffect(() => {
-    const audio = new Audio();
-    audio.volume = 0.9;
-    audioRef.current = audio;
-
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onEnded = () => setIsPlaying(false);
-    audio.addEventListener('play', onPlay);
-    audio.addEventListener('pause', onPause);
-    audio.addEventListener('ended', onEnded);
-
-    return () => {
-      audio.removeEventListener('play', onPlay);
-      audio.removeEventListener('pause', onPause);
-      audio.removeEventListener('ended', onEnded);
-      audio.pause();
-      audio.src = '';
-    };
-  }, []);
-  
-  const playAdhanSound = useCallback((soundName: string) => {
-    const audio = audioRef.current;
-    if (!audio) return Promise.resolve(false);
-    
-    const filePath = ADHAN_FILES[soundName];
-    if (!filePath) {
-      console.log(`[AdhanPlayer] No file mapping for "${soundName}"`);
-      return Promise.resolve(false);
-    }
-    
-    audio.src = filePath;
-    audio.currentTime = 0;
-    
-    return audio.play().then(() => true).catch((err) => {
-      console.log(`[AdhanPlayer] ✗ play() rejected:`, err.message);
-      return false;
-    });
-  }, []);
-  
-  const playAdhanTest = useCallback(() => {
-    const currentSound = useSettingsStore.getState().adhanSound;
-    console.log(`[AdhanPlayer] 🧪 TEST — sound setting: ${currentSound}`);
-    
-    window.dispatchEvent(
-      new CustomEvent('adhan-playing', {
-        detail: { prayerName: 'Test', prayerNameAr: '' },
-      })
-    );
-    
-    if (currentSound === 'default') {
-      playDefaultAdhan();
-    } else {
-      playAdhanSound(currentSound).then((played) => {
-        if (!played) {
-          playDefaultAdhan();
-        }
-      });
-    }
-  }, [playAdhanSound]);
-  
-  const pauseAdhan = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-    }
-  }, []);
-
-  const playAdhanPreview = useCallback((soundKey: string) => {
-    if (soundKey === 'default') {
-      playDefaultAdhan();
-    } else {
-      playAdhanSound(soundKey).then((played) => {
-        if (!played) {
-          playDefaultAdhan();
-        }
-      });
-    }
-  }, [playAdhanSound]);
 
   const triggerAdhan = useCallback(async (prayerName: string, prayerNameAr: string) => {
     const lang = useSettingsStore.getState().language;
@@ -181,14 +194,12 @@ export function useAdhanPlayer() {
       }
     } catch {}
 
-    // 2) Play adhan sound (only if audio is unlocked)
-    if (!isAudioUnlocked()) {
-      window.dispatchEvent(new CustomEvent('audio-unlock-needed'));
-    } else if (currentSound === 'default') {
+    // 2) Play adhan sound
+    if (currentSound === 'default') {
       playDefaultAdhan();
     } else {
-      const played = await playAdhanSound(currentSound);
-      if (!played) {
+      const filePlayed = await playAdhanFile(currentSound);
+      if (!filePlayed) {
         console.log(`[AdhanPlayer] File failed, falling back to default tones`);
         playDefaultAdhan();
       }
@@ -200,7 +211,7 @@ export function useAdhanPlayer() {
         detail: { prayerName, prayerNameAr },
       })
     );
-  }, [playAdhanSound]);
+  }, []);
 
   useEffect(() => {
     if (timerRef.current) {
@@ -228,12 +239,10 @@ export function useAdhanPlayer() {
         const prayerTime = new Date();
         prayerTime.setHours(h, m, 0, 0);
 
-        const diff = now.getTime() - prayerTime.getTime();
-        const absDiff = Math.abs(diff);
+        const diff = Math.abs(now.getTime() - prayerTime.getTime());
 
-        // Within 30 seconds of prayer time (normal trigger)
-        // OR prayer was up to 5 minutes ago (grace period for cold start)
-        if (absDiff <= 30000 || (diff > 0 && diff <= 5 * 60 * 1000)) {
+        // Within 30 seconds of prayer time
+        if (diff <= 30000) {
           const dateKey = `${key}-${now.toDateString()}`;
           if (notifiedPrayerRef.current !== dateKey) {
             notifiedPrayerRef.current = dateKey;
@@ -251,42 +260,25 @@ export function useAdhanPlayer() {
       }
     };
 
+    // Check immediately on mount
     check();
+
     timerRef.current = setInterval(check, 15 * 1000);
+
+    // Also check on visibility change (tab becomes active)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        check();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [adhanEnabled, isLoaded, timings, triggerAdhan, adhanSound]);
-
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
-
-    const handler = (event: MessageEvent) => {
-      const data = event.data;
-      if (!data) return;
-
-      if (data.type === 'PLAY_ADHAN' && adhanEnabled) {
-        const soundKey = data.sound || adhanSound;
-        const prayerKey = data.prayer || '';
-        const arabicName = prayerArabic[prayerKey] || prayerKey;
-
-        const dateKey = `${prayerKey}-${new Date().toDateString()}`;
-        if (notifiedPrayerRef.current === dateKey) return;
-        notifiedPrayerRef.current = dateKey;
-
-        triggerAdhan(prayerKey, arabicName);
-      }
-    };
-
-    navigator.serviceWorker.addEventListener('message', handler);
-    return () => {
-      navigator.serviceWorker.removeEventListener('message', handler);
-    };
-  }, [adhanEnabled, adhanSound, triggerAdhan]);
-
-  return { triggerAdhan, playAdhanTest, playAdhanPreview, pauseAdhan, isPlaying };
 }

@@ -8,16 +8,6 @@ export const metadata: Metadata = {
   description: "زادك في كل يوم — Your Daily Spiritual Provision",
   icons: {
     icon: "/icon.png",
-    apple: "/icon.png",
-  },
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "زاد مسلم",
-  },
-  other: {
-    "mobile-web-app-capable": "yes",
   },
 };
 

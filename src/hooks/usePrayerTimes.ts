@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useSettingsStore } from '@/store/settings-store';
 import type { PrayerTimings, HijriDate, NextPrayer } from '@/types';
 
@@ -66,7 +66,6 @@ function calculateNextPrayer(timings: PrayerTimings): NextPrayer | null {
 
 export function usePrayerTimes() {
   const { locationLat, locationLng, prayerMethod, madhab } = useSettingsStore();
-  const [nextPrayer, setNextPrayer] = useState<NextPrayer | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery<PrayerData>({
     queryKey: ['prayer-times', locationLat, locationLng, prayerMethod, madhab],
@@ -78,28 +77,29 @@ export function usePrayerTimes() {
         method: String(prayerMethod),
         school: String(madhab),
       });
-      return fetch(`/api/prayer?${params}`).then((r) => r.json());
+      return fetch(`/api/prayer?${params}`).then((r) => r.json()).then(async (d) => {
+        if ('caches' in window) {
+          try {
+            const cache = await caches.open('zad-muslim-cache');
+            await cache.put('/api/prayer-cache', new Response(JSON.stringify(d), {
+              headers: { 'Content-Type': 'application/json' },
+            }));
+          } catch (e) {
+            console.warn('[PrayerTimes] Cache not available:', e);
+          }
+        }
+        return d;
+      });
     },
     enabled: !!locationLat && !!locationLng,
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+    refetchInterval: 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 
-  useEffect(() => {
-    if (!data?.timings) {
-      setNextPrayer(null);
-      return;
-    }
-    
-    // Initial calculation
-    setNextPrayer(calculateNextPrayer(data.timings));
-
-    // Update every second locally without hitting the server
-    const interval = setInterval(() => {
-      setNextPrayer(calculateNextPrayer(data.timings));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [data?.timings]);
+  const nextPrayer = useMemo(
+    () => (data?.timings ? calculateNextPrayer(data.timings) : null),
+    [data]
+  );
 
   return {
     timings: data?.timings || null,

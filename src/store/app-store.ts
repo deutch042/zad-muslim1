@@ -10,7 +10,6 @@ interface AppStore {
   moreView: MoreView;
   isAppReady: boolean;
   isSplashComplete: boolean;
-  locationPromptDismissed: boolean;
 
   setActiveTab: (tab: AppTab) => void;
   navigate: (view: string) => void;
@@ -20,7 +19,6 @@ interface AppStore {
   setMoreView: (view: MoreView) => void;
   setAppReady: (ready: boolean) => void;
   setSplashComplete: (complete: boolean) => void;
-  dismissLocationPrompt: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -32,7 +30,6 @@ export const useAppStore = create<AppStore>((set) => ({
   moreView: "menu",
   isAppReady: false,
   isSplashComplete: false,
-  locationPromptDismissed: false,
 
   setActiveTab: (tab) =>
     set({
@@ -66,6 +63,4 @@ export const useAppStore = create<AppStore>((set) => ({
   setAppReady: (ready) => set({ isAppReady: ready }),
 
   setSplashComplete: (complete) => set({ isSplashComplete: complete }),
-
-  dismissLocationPrompt: () => set({ locationPromptDismissed: true }),
 }));

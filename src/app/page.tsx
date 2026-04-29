@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/app-store';
 import { usePrayerTimes } from '@/hooks/usePrayerTimes';
@@ -25,8 +25,6 @@ import { PrayerReminderToast } from '@/components/prayer/PrayerReminderToast';
 import { AdhanToast } from '@/components/prayer/AdhanToast';
 import { usePrayerReminder } from '@/hooks/usePrayerReminder';
 import { useAdhanPlayer } from '@/hooks/useAdhanPlayer';
-import { useAudioUnlock } from '@/hooks/useAudioUnlock';
-import { TapToPlayBanner } from '@/components/ui/TapToPlayBanner';
 import { SplashScreen } from '@/components/ui/SplashScreen';
 import SettingsPage from '@/components/settings/SettingsPage';
 
@@ -70,7 +68,7 @@ function HomeDashboard() {
   return (
     <div className="custom-scrollbar flex flex-col gap-5 overflow-y-auto p-4 pb-6">
       <HeroSection hijriDate={hijriDate} locationName={locationName} />
-      <NextPrayerCard nextPrayer={nextPrayer} timings={timings} />
+      <NextPrayerCard nextPrayer={nextPrayer} timings={timings} isLoading={prayerLoading} error={prayerError} onRetry={refetchPrayer} />
       <QuickActionsGrid />
       <HomeHadithCard />
       <LastReadCard />
@@ -82,6 +80,7 @@ function MoreMenu() {
   const language = useSettingsStore((s) => s.language);
   const isAr = language === 'ar';
   const setMoreView = useAppStore((s) => s.setMoreView);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
 
   const menuItems = [
     {
@@ -154,15 +153,15 @@ function MoreMenu() {
 }
 
 function MoreTab() {
-  const moreView = useAppStore((s) => s.moreView);
+  const activeView = useAppStore((s) => s.activeView);
   const setMoreView = useAppStore((s) => s.setMoreView);
 
   const renderView = () => {
-    switch (moreView) {
+    switch (activeView) {
       case 'qibla': return <SubViewWrapper onBack={() => setMoreView('menu')}><QiblaCompass /></SubViewWrapper>;
       case 'calendar': return <SubViewWrapper onBack={() => setMoreView('menu')}><HijriCalendar /></SubViewWrapper>;
       case 'radio': return <SubViewWrapper onBack={() => setMoreView('menu')}><QuranRadio /></SubViewWrapper>;
-      case 'settings': return <SettingsPage onBack={() => setMoreView('menu')} />;
+      case 'settings': return <SubViewWrapper onBack={() => setMoreView('menu')}><SettingsPage /></SubViewWrapper>;
       case 'names': return <SubViewWrapper onBack={() => setMoreView('menu')}><NamesOfAllah /></SubViewWrapper>;
       case 'goals': return <SubViewWrapper onBack={() => setMoreView('menu')}><DailyGoals /></SubViewWrapper>;
       case 'salawat': return <SubViewWrapper onBack={() => setMoreView('menu')}><SalawatCounter /></SubViewWrapper>;
@@ -174,41 +173,75 @@ function MoreTab() {
   return <div className="h-full">{renderView()}</div>;
 }
 
-function QuranTab() { return <MushafView />; }
-function PrayerTab() { return <PrayerTimes />; }
-function AzkarTab() { return <AzkarCategories />; }
+function QuranTab() {
+  return <MushafView />;
+}
+
+function PrayerTab() {
+  return <PrayerTimes />;
+}
+
+function AzkarTab() {
+  return <AzkarCategories />;
+}
 
 export default function Page() {
   const activeTab = useAppStore((s) => s.activeTab);
-  const { language, eyeComfort } = useSettingsStore();
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const language = useSettingsStore((s) => s.language);
   const isSplashComplete = useAppStore((s) => s.isSplashComplete);
   const setSplashComplete = useAppStore((s) => s.setSplashComplete);
+  const isAppReady = useAppStore((s) => s.isAppReady);
   const setAppReady = useAppStore((s) => s.setAppReady);
-  const locationPromptDismissed = useAppStore((s) => s.locationPromptDismissed);
-  const dismissLocationPrompt = useAppStore((s) => s.dismissLocationPrompt);
-  
-  const { permissionState, isLoading: geoLoading, requestLocation, error: geoError } = useGeolocation();
-  
-  useAdhanPlayer();
-  usePrayerReminder();
-  const { needsPrompt, setNeedsPrompt } = useAudioUnlock();
+  const { locationLat, locationLng, locationName } = useSettingsStore();
+  const { permissionState, isLoading, requestLocation, error } = useGeolocation();
 
-  const { hijriDate: headerHijri } = usePrayerTimes();
+  const __getHijriDate = usePrayerTimes();
+  const headerHijri = __getHijriDate.hijriDate;
+
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const initTimer = setTimeout(() => {
       setAppReady(true);
       setInitialLoading(false);
     }, 1500);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(initTimer);
   }, [setAppReady]);
 
-  const handleSplashComplete = useCallback(() => {
-    setSplashComplete(true);
-  }, [setSplashComplete]);
+  const pageTransition = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 },
+    transition: { duration: 0.25, ease: 'easeOut' },
+  };
+
+  const getActiveView = () => {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="h-full"
+        >
+          {activeTab === 'home' && <HomeDashboard />}
+          {activeTab === 'quran' && <QuranTab />}
+          {activeTab === 'prayer' && <PrayerTab />}
+          {activeTab === 'azkar' && <AzkarTab />}
+          {activeTab === 'more' && <MoreTab />}
+        </motion.div>
+      </AnimatePresence>
+    );
+  };
 
   const isQuranActive = activeTab === 'quran';
+
+  const handleSplashComplete = () => {
+    setSplashComplete(true);
+  };
 
   return (
     <>
@@ -216,53 +249,32 @@ export default function Page() {
       <div
         dir={language === 'ar' ? 'rtl' : 'ltr'}
         className={`relative flex min-h-screen w-full flex-col bg-zad-midnight ${!isSplashComplete ? 'invisible' : ''}`}
-        style={{ 
-          fontFamily: "'Noto Naskh Arabic', 'Inter', sans-serif",
-          filter: eyeComfort ? "sepia(0.35) contrast(0.95) brightness(0.95)" : "none",
-          transition: "filter 0.5s ease-in-out"
-        }}
+        style={{ fontFamily: "'Noto Naskh Arabic', 'Inter', sans-serif" }}
       >
         <IslamicPattern opacity={0.02} />
         {!isQuranActive && <Header hijriDate={headerHijri} />}
-        
-        <main className="relative z-10 flex-1 overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="h-full w-full"
-            >
-              {activeTab === 'home' && <HomeDashboard />}
-              {activeTab === 'quran' && <QuranTab />}
-              {activeTab === 'prayer' && <PrayerTab />}
-              {activeTab === 'azkar' && <AzkarTab />}
-              {activeTab === 'more' && <MoreTab />}
-            </motion.div>
-          </AnimatePresence>
+        <main className="custom-scrollbar relative z-10 flex-1 overflow-y-auto">
+          {getActiveView()}
         </main>
-
-        {!isQuranActive && <BottomNav />}
+        {!isQuranActive && (
+          <div className="mt-auto">
+            <BottomNav />
+          </div>
+        )}
 
         <AnimatePresence>
-          {permissionState !== 'granted' && !locationPromptDismissed && (
+          {permissionState !== 'granted' && (
             <LocationPermissionOverlay
               permissionState={permissionState}
-              isLoading={geoLoading}
+              isLoading={isLoading}
               onAllow={requestLocation}
-              onDismiss={dismissLocationPrompt}
-              error={geoError}
+              onDismiss={() => {}}
+              error={error}
             />
           )}
         </AnimatePresence>
 
         <SalawatBanner />
-        <TapToPlayBanner
-          visible={needsPrompt}
-          onTap={() => setNeedsPrompt(false)}
-        />
         <PrayerReminderToast />
         <AdhanToast />
       </div>

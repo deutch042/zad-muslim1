@@ -14,18 +14,18 @@ export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set, get) => ({
       ...DEFAULT_SETTINGS,
-      locationLat: 31.0421,
-      locationLng: 31.3428,
-      locationName: "المنصورة",
+      locationLat: 30.0444,
+      locationLng: 31.2357,
+      locationName: "القاهرة",
       isLoaded: false,
 
       updateSettings: (partial) => set((s) => ({ ...s, ...partial })),
       resetSettings: () =>
         set({
           ...DEFAULT_SETTINGS,
-          locationLat: 31.0421,
-          locationLng: 31.3428,
-          locationName: "المنصورة",
+          locationLat: 30.0444,
+          locationLng: 31.2357,
+          locationName: "القاهرة",
           isLoaded: false,
         }),
       setLocation: (lat, lng, name) =>
@@ -34,34 +34,34 @@ export const useSettingsStore = create<SettingsStore>()(
     {
       name: "zad-muslim-settings",
       partialize: (state) => ({
+        fontSize: state.fontSize,
         theme: state.theme,
         language: state.language,
         prayerMethod: state.prayerMethod,
         madhab: state.madhab,
-        reciterId: state.reciterId,
-        quranFontSize: state.quranFontSize,
         locationLat: state.locationLat,
         locationLng: state.locationLng,
         locationName: state.locationName,
         eyeComfort: state.eyeComfort,
-        adhanEnabled: state.adhanEnabled,
         adhanSound: state.adhanSound,
+        adhanType: state.adhanType,
+        adhanEnabled: state.adhanEnabled,
         salawatEnabled: state.salawatEnabled,
-        salawatSound: state.salawatSound,
         salawatInterval: state.salawatInterval,
+        salawatReminder: state.salawatReminder,
         prayerReminderEnabled: state.prayerReminderEnabled,
         prayerReminderMinutes: state.prayerReminderMinutes,
+        notificationPermission: state.notificationPermission,
         pushEnabled: state.pushEnabled,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          useSettingsStore.setState({
-            locationLat: state.locationLat ?? 31.0421,
-            locationLng: state.locationLng ?? 31.3428,
-            locationName: state.locationName ?? "المنصورة",
-            isLoaded: true,
-          });
+          state.locationLat = state.locationLat ?? 30.0444;
+          state.locationLng = state.locationLng ?? 31.2357;
+          state.locationName = state.locationName ?? "القاهرة";
+          state.isLoaded = true;
         }
+        return state;
       },
     }
   )
