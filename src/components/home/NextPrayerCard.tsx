@@ -1,141 +1,192 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
 import { parseTimeString, formatTime12Hour } from '@/lib/time';
-import { Clock, BellRing, Sparkles } from 'lucide-react';
-import type { NextPrayer, PrayerTimings } from '@/types';
 
 interface NextPrayerCardProps {
-  nextPrayer: NextPrayer | null;
-  timings: PrayerTimings | null;
+  nextPrayer: { name: string; nameAr: string; time: string; remaining: number } | null;
+  timings: Record<string, string> | null;
+  isLoading: boolean;
+  error: Error | null;
+  onRetry: () => void;
 }
 
-export function NextPrayerCard({ nextPrayer, timings }: NextPrayerCardProps) {
+export function NextPrayerCard({ nextPrayer, timings, isLoading, error, onRetry }: NextPrayerCardProps) {
   const [timeLeft, setTimeLeft] = useState('');
-  const [progress, setProgress] = useState(0);
   const language = useSettingsStore((s) => s.language);
   const t = TRANSLATIONS[language];
   const isAr = language === 'ar';
 
   useEffect(() => {
-    if (!nextPrayer) return;
-
-    const targetTime = Date.now() + nextPrayer.remaining;
-
     const update = () => {
-      const now = Date.now();
-      const msLeft = Math.max(0, targetTime - now);
+      if (!nextPrayer) { setTimeLeft(''); return; }
+      const parts = parseTimeString(nextPrayer.time);
+      if (!parts) { setTimeLeft(''); return; }
       
-      // Progress calculation (based on typical 5-hour gap)
-      const totalWindow = 5 * 60 * 60 * 1000;
-      const elapsed = totalWindow - msLeft;
-      setProgress(Math.min(100, Math.max(0, (elapsed / totalWindow) * 100)));
-
-      const h = Math.floor(msLeft / 3600000);
-      const m = Math.floor((msLeft % 3600000) / 60000);
-      const s = Math.floor((msLeft % 60000) / 1000);
+      const target = new Date();
+      target.setHours(parts.hours, parts.minutes, 0, 0);
+      if (target <= new Date()) target.setDate(target.getDate() + 1);
       
-      setTimeLeft(
-        `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-      );
+      const ms = target.getTime() - Date.now();
+      if (ms <= 0) { setTimeLeft(''); return; }
+      
+      const hrs = Math.floor(ms / 3600000);
+      const mins = Math.floor((ms % 3600000) / 60000);
+      const secs = Math.floor((ms % 60000) / 1000);
+      
+      setTimeLeft(hrs > 0
+        ? `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+        : `${mins}:${String(secs).padStart(2, '0')}`);
     };
-
     update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
   }, [nextPrayer]);
 
-  const sunrise = timings?.Sunrise;
+  const hasTimings = timings && Object.keys(timings).length > 0;
+
+  const remainingInfo = (() => {
+    if (!timings || !nextPrayer) return null;
+    const keys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
+    let found = false;
+    let count = 0;
+    for (const key of keys) {
+      if (!found && nextPrayer.name === key) { found = true; }
+      if (found) count++;
+    }
+    if (!found) count = 5;
+    return count;
+  })();
+
+  const sunrise = timings?.Sunrise || null;
+
+  if (error && !nextPrayer && !hasTimings && !isLoading) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}
+        className="flex flex-col items-center gap-3 rounded-2xl border border-zad-border bg-zad-surface p-6 text-center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8 text-text-muted">
+          <path d="M12 9v4M12 17h.01M12 2a10 10 0 100 20 10 10 0 000-20z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <p className="text-sm text-text-muted">{isAr ? 'تعذر تحميل مواقيت الصلاة' : 'Failed to load'}</p>
+        <button onClick={onRetry} className="rounded-lg bg-zad-gold/10 px-4 py-2 text-xs text-zad-gold transition-colors hover:bg-zad-gold/20">
+          {isAr ? 'إعادة المحاولة' : 'Retry'}
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (isLoading || (!nextPrayer && !hasTimings)) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}
+        className="animate-pulse rounded-2xl border border-zad-border bg-zad-surface p-5">
+        <div className="mb-4 h-5 w-24 rounded bg-zad-gold/15" />
+        <div className="flex gap-2">
+          <div className="h-16 flex-1 rounded-xl bg-zad-midnight/50" />
+          <div className="h-16 flex-1 rounded-xl bg-zad-midnight/50" />
+          <div className="h-16 flex-1 rounded-xl bg-zad-midnight/50" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  const prayerMeta: Record<string, { icon: React.ReactNode; color: string }> = {
+    Fajr: {
+      icon: <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" /><circle cx="18" cy="5" r="1" fill="currentColor" opacity="0.6" stroke="none" /><circle cx="20" cy="9" r="0.7" fill="currentColor" opacity="0.4" stroke="none" /></svg>,
+      color: 'from-sky-500/20 to-slate-900/10',
+    },
+    Dhuhr: {
+      icon: <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" strokeLinecap="round" /></svg>,
+      color: 'from-amber-500/20 to-orange-900/10',
+    },
+    Asr: {
+      icon: <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" strokeLinecap="round" /><path d="M15 15l5 5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="20" cy="20" r="2" opacity="0.4" /></svg>,
+      color: 'from-orange-500/20 to-red-900/10',
+    },
+    Maghrib: {
+      icon: <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5"><path d="M12 10a5 5 0 0 1 5 5" strokeLinecap="round" /><circle cx="12" cy="17" r="1" fill="currentColor" opacity="0.5" stroke="none" /><path d="M3 17h18" strokeLinecap="round" opacity="0.4" /><path d="M5 20h14" strokeLinecap="round" opacity="0.2" /></svg>,
+      color: 'from-rose-500/20 to-pink-900/10',
+    },
+    Isha: {
+      icon: <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" /><circle cx="5" cy="5" r="0.8" fill="currentColor" opacity="0.5" stroke="none" /><circle cx="3" cy="9" r="0.6" fill="currentColor" opacity="0.4" stroke="none" /><circle cx="7" cy="3" r="0.5" fill="currentColor" opacity="0.3" stroke="none" /></svg>,
+      color: 'from-violet-500/20 to-indigo-900/10',
+    },
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-zad-surface/80 to-zad-midnight p-6 shadow-2xl border border-zad-gold/20"
+      transition={{ delay: 0.1, duration: 0.4 }}
+      className="rounded-2xl border border-zad-border bg-zad-surface overflow-hidden"
     >
-      {/* Decorative Ornaments */}
-      <div className="absolute -top-10 -right-10 w-40 h-40 bg-zad-gold/10 blur-[50px] rounded-full pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-zad-gold/5 blur-[40px] rounded-full pointer-events-none" />
-      
-      <div className="relative z-10 flex flex-col gap-6">
-        {/* Header */}
+      <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
-          <div className={`flex items-center gap-3 ${isAr ? 'flex-row-reverse' : ''}`}>
-             <div className="w-10 h-10 rounded-2xl bg-zad-gold/10 flex items-center justify-center border border-zad-gold/20">
-                <BellRing size={20} className="text-zad-gold animate-pulse-slow" />
-             </div>
-             <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zad-gold/60">{t.nextPrayer}</p>
-                <h2 className="arabic-display text-3xl font-black text-text-primary leading-none mt-1">
-                  {nextPrayer?.nameAr || '—'}
-                </h2>
-             </div>
+          <div className="flex items-center gap-3">
+            {nextPrayer && (
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${prayerMeta[nextPrayer.name]?.color || 'from-zad-gold/20 to-zad-gold/5'} text-zad-gold`}>
+                {prayerMeta[nextPrayer.name]?.icon || <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>}
+              </div>
+            )}
+            <div>
+              <p className="text-[11px] text-text-muted">{t.nextPrayer}</p>
+              <p className="arabic-display text-xl font-bold text-zad-gold">{nextPrayer?.nameAr || '—'}</p>
+              {nextPrayer?.time && (
+                <p className="text-xs text-text-secondary font-mono tabular-nums mt-0.5">
+                  {(() => {
+                    const parsed = parseTimeString(nextPrayer.time);
+                    return parsed ? formatTime12Hour(parsed.hours, parsed.minutes) : nextPrayer.time;
+                  })()}
+                </p>
+              )}
+            </div>
           </div>
-          
-          <div className="text-right">
-             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zad-surface border border-zad-border">
-                <Clock size={12} className="text-zad-gold" />
-                <span className="font-mono text-xs font-bold text-text-primary">
-                  {nextPrayer?.time ? (() => {
-                    const p = parseTimeString(nextPrayer.time);
-                    return p ? formatTime12Hour(p.hours, p.minutes, language) : '—';
-                  })() : '—'}
-                </span>
-             </div>
-          </div>
-        </div>
-
-        {/* Big Countdown */}
-        <div className="flex flex-col items-center justify-center py-4 bg-zad-midnight/40 rounded-[2rem] border border-zad-border/30 relative">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--color-zad-gold)_0%,_transparent_100%)] opacity-[0.03]" />
-          
-          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">{t.remaining}</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-5xl font-black font-mono tabular-nums tracking-tighter text-text-primary drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-              {timeLeft || '00:00:00'}
-            </span>
-          </div>
-
-          {/* Progress Indicator */}
-          <div className="mt-6 w-full max-w-[240px] h-1.5 bg-zad-border/40 rounded-full overflow-hidden p-[2px]">
-             <motion.div 
-               initial={{ width: 0 }}
-               animate={{ width: `${progress}%` }}
-               transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-               className="h-full rounded-full bg-gradient-to-r from-zad-gold to-zad-gold-light shadow-[0_0_10px_rgba(212,160,23,0.4)]"
-             />
-          </div>
-        </div>
-
-        {/* Sunrise Info & Extra Detail */}
-        <div className={`flex items-center justify-between ${isAr ? 'flex-row-reverse' : ''}`}>
-           {sunrise && (
-             <div className={`flex items-center gap-3 ${isAr ? 'flex-row-reverse text-right' : 'text-left'}`}>
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-500">
-                   <Sparkles size={14} />
-                </div>
-                <div>
-                   <p className="text-[10px] font-bold text-text-muted uppercase">{isAr ? 'الشروق' : 'Sunrise'}</p>
-                   <p className="font-mono text-xs font-bold text-amber-200">
-                     {(() => {
-                        const p = parseTimeString(sunrise);
-                        return p ? formatTime12Hour(p.hours, p.minutes, language) : '—';
-                     })()}
-                   </p>
-                </div>
-             </div>
-           )}
-           
-           <div className="px-4 py-2 rounded-2xl bg-zad-gold/5 border border-zad-gold/10">
-              <p className="text-[10px] font-medium text-zad-gold/80 italic">
-                {isAr ? 'اللهم بارك لنا في وقتنا' : 'Bless our time, O Allah'}
-              </p>
-           </div>
+          {timeLeft && (
+            <div className="text-left">
+              <p className="text-[10px] text-text-muted" id="remaining-label">{t.remaining}</p>
+              <p className="font-mono text-2xl font-bold tabular-nums text-text-primary" aria-live="polite" aria-atomic="true" aria-labelledby="remaining-label">{timeLeft}</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {hasTimings && (
+        <div className="flex gap-2 px-4 pb-4">
+          {sunrise && (
+            <div className="flex flex-1 items-center gap-2 rounded-xl bg-zad-midnight/40 px-3 py-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4 text-amber-400">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2m0 16v2m-8-3l1.41-1.41m13.18 0L19.59 19M4.22 4.22l1.42 1.42m12.72 0l1.42-1.42" strokeLinecap="round" />
+                  <path d="M5 16h14" strokeLinecap="round" opacity="0.3" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-[10px] text-text-muted">{isAr ? 'الشروق' : 'Sunrise'}</p>
+                <p className="text-xs font-mono font-semibold tabular-nums text-amber-300">
+                  {(() => {
+                    const parsed = parseTimeString(sunrise);
+                    return parsed ? formatTime12Hour(parsed.hours, parsed.minutes) : sunrise;
+                  })()}
+                </p>
+              </div>
+            </div>
+          )}
+          {remainingInfo !== null && (
+            <div className="flex flex-1 items-center gap-2 rounded-xl bg-zad-midnight/40 px-3 py-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zad-gold/10">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4 text-zad-gold">
+                  <path d="M12 8v4l3 3h-6l3-3" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.12 5.12a10 10 0 1014.07 14.07" strokeLinecap="round"/><circle cx="12" cy="12" r="1.5"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-[10px] text-text-muted">{isAr ? 'الصلوات الباقية' : 'Remaining'}</p>
+                <p className="text-xs font-semibold text-text-primary">{remainingInfo} {isAr ? 'صلوات' : 'prayers'}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

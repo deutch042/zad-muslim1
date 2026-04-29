@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
-import type { TranslationStrings } from '@/types';
 
 interface AdhanData {
   prayerName: string;
@@ -16,7 +15,7 @@ export function AdhanToast() {
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const language = useSettingsStore((s) => s.language);
   const isAr = language === 'ar';
-  const t = TRANSLATIONS[language] as TranslationStrings;
+  const t = TRANSLATIONS[language];
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -82,7 +81,7 @@ export function AdhanToast() {
 
             {/* Title */}
             <h2 className="arabic-display text-center text-xl font-bold text-zad-gold">
-              {t.adhanToastTitle || (isAr ? 'حان وقت الصلاة' : 'Prayer Time')}
+              {t.adhanToastTitle}
             </h2>
 
             {/* Prayer name */}

@@ -20,7 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
-import type { TranslationStrings } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface DailyHadith {
@@ -43,7 +42,6 @@ interface HadithData {
   daily: DailyHadith;
   collections: HadithCollection[];
   totalHadiths: number;
-  items?: any[];
 }
 
 // ── Animation variants ─────────────────────────────────────────────
@@ -217,15 +215,14 @@ function HadithLoadingSkeleton() {
 // ── Main component ─────────────────────────────────────────────────
 export function HadithView() {
   const [copied, setCopied] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const language = useSettingsStore((s) => s.language);
-  const t = TRANSLATIONS[language] as TranslationStrings;
+  const t = TRANSLATIONS[language];
   const isRtl = language === 'ar';
 
   const { data, isLoading, isError, refetch } = useQuery<HadithData>({
-    queryKey: ['hadith-data', selectedCollection],
-    queryFn: () => fetch(`/api/hadith${selectedCollection ? `?book=${selectedCollection}` : ''}`).then((r) => r.json()),
-    staleTime: 6 * 60 * 60 * 1000,
+    queryKey: ['hadith-data'],
+    queryFn: () => fetch('/api/hadith').then((r) => r.json()),
+    staleTime: 6 * 60 * 60 * 1000, // 6 hours — matches API cache
   });
 
   const daily = data?.daily;
@@ -454,133 +451,87 @@ export function HadithView() {
       </motion.div>
 
       {/* ────────────────────────────────────────────────────────────
-          SECTION 2 — Hadith Collections Grid or Selected Collection
+          SECTION 2 — Hadith Collections Grid
           ──────────────────────────────────────────────────────────── */}
-      {selectedCollection ? (
-        <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-          <div className="mb-4 flex items-center justify-between px-1">
-            <button
-              onClick={() => setSelectedCollection(null)}
-              className="flex items-center gap-1 text-sm font-semibold text-zad-gold hover:text-zad-gold/80 transition-colors"
-            >
-              <ChevronDown size={18} className="rotate-90" />
-              {isRtl ? 'العودة للمجموعات' : 'Back to Collections'}
-            </button>
-            <span className="rounded-full bg-zad-gold/10 px-2 py-0.5 text-[10px] font-medium text-zad-gold">
-              {data?.items?.length || 0} {isRtl ? 'حديث' : 'hadiths'}
-            </span>
-          </div>
-          
-          <div className="space-y-4">
-            {data?.items?.map((item, index) => {
-              const textAr = item.arab || item.textAr;
-              const textEn = item.id || item.textEn;
-              const num = item.number || item.hadithnumber || index + 1;
-              
-              return (
-                <Card key={index} className="overflow-hidden rounded-xl border border-zad-border bg-zad-surface/40 hover:border-zad-gold/30 transition-all">
-                  <CardContent className="p-5">
-                    <div className="mb-3 flex items-center justify-between border-b border-zad-border/50 pb-2">
-                      <span className="text-xs text-text-muted">
-                        {isRtl ? `حديث رقم ${num}` : `Hadith No. ${num}`}
-                      </span>
-                    </div>
-                    <div dir="rtl" className="mb-4 text-right">
-                      <p className="text-arabic arabic-display text-xl leading-relaxed text-text-primary">
-                        {textAr}
-                      </p>
-                    </div>
-                    {!isRtl && textEn && (
-                      <p className="text-sm leading-relaxed text-text-secondary italic mt-4 border-t border-zad-border/30 pt-3">
-                        &ldquo;{textEn}&rdquo;
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div initial="hidden" animate="visible">
-          {/* Section header */}
-          <div className="mb-4 flex items-center gap-2 px-1">
-            <BookOpen size={16} className="text-zad-gold" />
-            <h3 className="text-sm font-semibold text-text-primary">
-              {language === 'ar' ? 'كتب الحديث' : 'Hadith Collections'}
-            </h3>
-            <span className="ml-auto rounded-full bg-zad-gold/10 px-2 py-0.5 text-[10px] font-medium text-zad-gold">
-              {collections.length} {language === 'ar' ? 'كتب' : 'books'}
-            </span>
-          </div>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Section header */}
+        <div className="mb-4 flex items-center gap-2 px-1">
+          <BookOpen size={16} className="text-zad-gold" />
+          <h3 className="text-sm font-semibold text-text-primary">
+            {language === 'ar' ? 'كتب الحديث' : 'Hadith Collections'}
+          </h3>
+          <span className="ml-auto rounded-full bg-zad-gold/10 px-2 py-0.5 text-[10px] font-medium text-zad-gold">
+            {collections.length} {language === 'ar' ? 'كتب' : 'books'}
+          </span>
+        </div>
 
-          {/* Collections grid */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {collections.map((collection, index) => (
-              <motion.div
-                key={collection.id}
-                custom={index}
-                variants={fadeInUp}
-                initial="hidden"
-                animate="visible"
-              >
-                <Card 
-                  onClick={() => setSelectedCollection(String(collection.id))}
-                  className="group cursor-pointer overflow-hidden rounded-xl border border-zad-border bg-zad-surface/40 transition-all duration-300 hover:border-zad-gold/30 hover:bg-zad-gold/[0.03] hover:shadow-md hover:shadow-zad-gold/[0.04]">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {/* Collection number icon */}
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zad-gold/10 transition-colors group-hover:bg-zad-gold/15">
-                        <BookOpen
-                          size={18}
-                          className="text-zad-gold/70 transition-colors group-hover:text-zad-gold"
+        {/* Collections grid */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {collections.map((collection, index) => (
+            <motion.div
+              key={collection.id}
+              custom={index}
+              variants={fadeInUp}
+              initial="hidden"
+              animate="visible"
+            >
+              <Card className="group cursor-pointer overflow-hidden rounded-xl border border-zad-border bg-zad-surface/40 transition-all duration-300 hover:border-zad-gold/30 hover:bg-zad-gold/[0.03] hover:shadow-md hover:shadow-zad-gold/[0.04]">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    {/* Collection number icon */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zad-gold/10 transition-colors group-hover:bg-zad-gold/15">
+                      <BookOpen
+                        size={18}
+                        className="text-zad-gold/70 transition-colors group-hover:text-zad-gold"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      {/* Collection names */}
+                      <div className="flex items-center justify-between gap-2">
+                        <h4
+                          dir="rtl"
+                          className="arabic-display text-sm font-bold text-text-primary"
+                        >
+                          {collection.nameAr}
+                        </h4>
+                        <ChevronDown
+                          size={14}
+                          className="shrink-0 rotate-[-90deg] text-text-muted transition-transform group-hover:translate-x-0.5"
                         />
                       </div>
+                      <p className="mt-0.5 truncate text-xs text-text-secondary">
+                        {collection.nameEn}
+                      </p>
 
-                      <div className="min-w-0 flex-1">
-                        {/* Collection names */}
-                        <div className="flex items-center justify-between gap-2">
-                          <h4
-                            dir="rtl"
-                            className="arabic-display text-sm font-bold text-text-primary"
-                          >
-                            {collection.nameAr}
-                          </h4>
-                          <ChevronDown
-                            size={14}
-                            className="shrink-0 rotate-[-90deg] text-text-muted transition-transform group-hover:translate-x-0.5"
-                          />
-                        </div>
-                        <p className="mt-0.5 truncate text-xs text-text-secondary">
-                          {collection.nameEn}
-                        </p>
+                      {/* Description */}
+                      <p
+                        dir="rtl"
+                        className="mt-2 text-xs leading-relaxed text-text-muted"
+                      >
+                        {collection.description}
+                      </p>
 
-                        {/* Description */}
-                        <p
-                          dir="rtl"
-                          className="mt-2 text-xs leading-relaxed text-text-muted"
-                        >
-                          {collection.description}
-                        </p>
-
-                        {/* Hadith count */}
-                        <div className="mt-3 flex items-center gap-1.5">
-                          <div className="h-px flex-1 bg-zad-border/50" />
-                          <span className="text-[11px] tabular-nums font-medium text-zad-gold/70">
-                            {collection.hadithsCount.toLocaleString()}{' '}
-                            {language === 'ar' ? 'حديث' : 'hadiths'}
-                          </span>
-                          <div className="h-px flex-1 bg-zad-border/50" />
-                        </div>
+                      {/* Hadith count */}
+                      <div className="mt-3 flex items-center gap-1.5">
+                        <div className="h-px flex-1 bg-zad-border/50" />
+                        <span className="text-[11px] tabular-nums font-medium text-zad-gold/70">
+                          {collection.hadithsCount.toLocaleString()}{' '}
+                          {language === 'ar' ? 'حديث' : 'hadiths'}
+                        </span>
+                        <div className="h-px flex-1 bg-zad-border/50" />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 }

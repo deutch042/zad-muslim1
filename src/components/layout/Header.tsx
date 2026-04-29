@@ -1,11 +1,10 @@
 'use client';
 
 import { memo, useCallback } from 'react';
-import { Settings, ArrowRight, ArrowLeft, Moon, Sparkles } from 'lucide-react';
+import { Settings, ArrowRight, ArrowLeft, Moon } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
-import { motion, AnimatePresence } from 'framer-motion';
 import type { HijriDate } from '@/types';
 
 interface HeaderProps {
@@ -15,115 +14,74 @@ interface HeaderProps {
 }
 
 export const Header = memo(function Header({ hijriDate, showBack, title }: HeaderProps) {
-  const goBack = useAppStore((s) => s.goBack);
-  const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const setMoreView = useAppStore((s) => s.setMoreView);
-  
+  const { goBack } = useAppStore();
   const language = useSettingsStore((s) => s.language);
   const t = TRANSLATIONS[language];
   const isRtl = language === 'ar';
 
   const handleSettingsClick = useCallback(() => {
-    setActiveTab('more');
-    setMoreView('settings');
-  }, [setActiveTab, setMoreView]);
+    useAppStore.getState().setActiveTab('more');
+    useAppStore.getState().setMoreView('settings');
+  }, []);
 
   return (
-    <header className="relative z-40 w-full overflow-hidden border-b border-zad-border bg-zad-midnight/80 backdrop-blur-xl">
-      {/* Premium Gradient Ornament */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-zad-gold/40 to-transparent" />
-      
-      <div className="relative flex items-center justify-between px-5 py-3.5">
-        
-        {/* Left Side: Back or Brand */}
-        <div className="flex items-center min-w-[100px]">
-          <AnimatePresence mode="wait">
-            {showBack ? (
-              <motion.button
-                key="back"
-                initial={{ opacity: 0, x: isRtl ? 10 : -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isRtl ? 10 : -10 }}
-                onClick={goBack}
-                className="group flex items-center gap-1.5 rounded-xl bg-zad-surface border border-zad-border px-3 py-1.5 transition-all hover:border-zad-gold/30 hover:bg-zad-surface/80"
-              >
-                {isRtl ? (
-                  <ArrowRight size={18} className="text-zad-gold group-hover:translate-x-0.5 transition-transform" />
-                ) : (
-                  <ArrowLeft size={18} className="text-zad-gold group-hover:-translate-x-0.5 transition-transform" />
-                )}
-                <span className="text-xs font-bold text-text-secondary">{t.back}</span>
-              </motion.button>
-            ) : (
-              <motion.div 
-                key="brand"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center gap-2.5"
-              >
-                <div className="relative">
-                  <Moon size={22} className="text-zad-gold moon-glow fill-zad-gold/10" />
-                  <motion.div
-                    animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="absolute -top-1 -right-1"
-                  >
-                    <Sparkles size={10} className="text-zad-gold-light" />
-                  </motion.div>
-                </div>
-                <span className="gold-text arabic-display text-lg font-black tracking-tight leading-none">
-                  {t.appName}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+    <header className="relative overflow-hidden border-b border-zad-border bg-zad-navy/50 backdrop-blur-sm">
+      {/* Subtle Islamic pattern background */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4A017' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      <div className="relative flex items-center justify-between px-4 py-3">
+        {/* Right side: Back button or Logo */}
+        <div className="flex items-center gap-2">
+          {showBack ? (
+            <button
+              onClick={goBack}
+              className="rounded-full p-2 transition-colors hover:bg-zad-surface"
+              aria-label="Go back"
+            >
+              {isRtl ? (
+                <ArrowRight size={20} className="text-text-secondary" aria-hidden="true" />
+              ) : (
+                <ArrowLeft size={20} className="text-text-secondary" aria-hidden="true" />
+              )}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Moon size={20} className="text-zad-gold moon-glow rounded-full" aria-hidden="true" />
+              <span className="gold-text font-branding text-sm font-semibold tracking-wide">
+                {t.appName}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Center: Contextual Info */}
-        <div className="flex flex-col items-center">
-          <AnimatePresence mode="wait">
-            {title ? (
-              <motion.h1 
-                key={title}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-sm font-bold gold-text arabic-display"
-              >
-                {title}
-              </motion.h1>
-            ) : (
-              <motion.div 
-                key="greeting"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center"
-              >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zad-gold/60 mb-0.5">{t.greeting}</span>
-                {hijriDate && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 rounded-full bg-zad-gold/40" />
-                    <p className="arabic-display text-[11px] font-medium text-text-primary">
-                      {hijriDate.day} {hijriDate.monthAr} {hijriDate.year}
-                    </p>
-                    <span className="w-1 h-1 rounded-full bg-zad-gold/40" />
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        {/* Center: Title or Greeting */}
+        <div className="text-center">
+          {title ? (
+            <h1 className="text-sm font-medium text-text-primary">{title}</h1>
+          ) : (
+            <>
+              <p className="text-sm text-text-secondary">{t.greeting}</p>
+              {hijriDate && (
+                <p className="arabic-display text-xs text-text-muted">
+                  {hijriDate.weekday?.ar}، {hijriDate.day} {hijriDate.monthAr} {hijriDate.year}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Right Side: Settings */}
-        <div className="flex items-center justify-end min-w-[100px]">
-          <button
-            onClick={handleSettingsClick}
-            className="group relative p-2.5 rounded-2xl bg-zad-surface/50 border border-zad-border transition-all hover:border-zad-gold/30 hover:bg-zad-surface"
-            aria-label={t.settings}
-          >
-            <Settings size={20} className="text-text-secondary group-hover:text-zad-gold group-hover:rotate-45 transition-all duration-500" />
-            <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-zad-gold opacity-0 group-hover:opacity-100 transition-opacity blur-[2px]" />
-          </button>
-        </div>
+        {/* Left side: Settings */}
+        <button
+          onClick={handleSettingsClick}
+          className="rounded-full p-2 transition-colors hover:bg-zad-surface"
+          aria-label={t.settings}
+        >
+          <Settings size={20} className="text-text-secondary" />
+        </button>
       </div>
     </header>
   );

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
-import type { TranslationStrings } from '@/types';
 import { AzkarList } from './AzkarList';
 import { TasbeehCounter } from './TasbeehCounter';
 
@@ -52,7 +51,7 @@ function SleepIcon({ className = 'h-8 w-8' }: { className?: string }) {
       <circle cx="20" cy="18" r="1" fill="#F5C842" opacity="0.5" />
       <circle cx="14" cy="24" r="0.8" fill="#F5C842" opacity="0.4" />
       <circle cx="24" cy="12" r="0.6" fill="#F5C842" opacity="0.3" />
-      <path d="M18 44c0-4 6-6 10-4s4 6 8 4c4-2 2-2-10-2s-14 0-14 0" stroke="#7C3AED" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+      <path d="M18 44c0-4 6-6 10-4s4 6 8 4-2-2-10-2-14 0" stroke="#7C3AED" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
       <text x="32" y="55" textAnchor="middle" fill="#7C3AED" fontSize="10" opacity="0.4" fontFamily="sans-serif">z</text>
       <text x="40" y="52" textAnchor="middle" fill="#7C3AED" fontSize="7" opacity="0.3" fontFamily="sans-serif">z</text>
       <text x="24" y="52" textAnchor="middle" fill="#7C3AED" fontSize="8" opacity="0.25" fontFamily="sans-serif">z</text>
@@ -87,63 +86,6 @@ function TravelIcon({ className = 'h-8 w-8' }: { className?: string }) {
   );
 }
 
-function GeneralIcon({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" className={className}>
-      <circle cx="32" cy="32" r="20" stroke="#F59E0B" strokeWidth="1.5" opacity="0.3" />
-      <circle cx="32" cy="32" r="14" stroke="#F59E0B" strokeWidth="1.5" opacity="0.5" />
-      <circle cx="32" cy="32" r="8" fill="#F59E0B" opacity="0.2" />
-      <path d="M32 12v8M32 44v8M12 32h8M44 32h8" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-      <path d="M20 20l5 5M39 39l5 5M44 20l-5 5M25 39l-5 5" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" opacity="0.3" />
-    </svg>
-  );
-}
-
-function EnterLeaveIcon({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" className={className}>
-      <rect x="14" y="14" width="36" height="36" rx="4" stroke="#10B981" strokeWidth="1.5" opacity="0.5" />
-      <path d="M32 14v36" stroke="#10B981" strokeWidth="1.5" opacity="0.3" />
-      <path d="M20 32h12l-3-3M20 32l3 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-      <path d="M44 32H32l3-3M44 32l-3 3" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-      <circle cx="26" cy="28" r="2" fill="#10B981" opacity="0.4" />
-      <circle cx="38" cy="36" r="2" fill="#10B981" opacity="0.4" />
-    </svg>
-  );
-}
-
-function WakeUpIcon({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" className={className}>
-      <circle cx="32" cy="28" r="12" fill="#F97316" opacity="0.15" stroke="#F97316" strokeWidth="1.5" />
-      <path d="M32 16v-4M20 20l-3-3M44 20l3-3M16 28h-4M52 28h-4" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-      <path d="M20 44c0-6 5-10 12-10s12 4 12 10" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-      <path d="M26 48h12M28 52h8" stroke="#F97316" strokeWidth="1.2" strokeLinecap="round" opacity="0.3" />
-    </svg>
-  );
-}
-
-function ProtectionIcon({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" className={className}>
-      <path d="M32 10l-16 8v12c0 10 6 18 16 22 10-4 16-12 16-22V18l-16-8z" fill="#3B82F6" opacity="0.1" stroke="#3B82F6" strokeWidth="1.5" />
-      <path d="M32 18v16M26 28l6 6 10-10" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-      <circle cx="32" cy="14" r="2" fill="#3B82F6" opacity="0.5" />
-    </svg>
-  );
-}
-
-function GratitudeIcon({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" className={className}>
-      <circle cx="32" cy="32" r="18" stroke="#EC4899" strokeWidth="1.5" opacity="0.5" />
-      <path d="M24 30c0-2 1-4 3-4s3 2 3 4M34 30c0-2 1-4 3-4s3 2 3 4" stroke="#EC4899" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-      <path d="M22 36c2 4 6 6 10 6s8-2 10-6" stroke="#EC4899" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-      <path d="M20 20l4 4M44 20l-4 4" stroke="#EC4899" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-    </svg>
-  );
-}
-
 /* ─── Category Data ──────────────────────────────────── */
 interface Category {
   key: string;
@@ -162,11 +104,6 @@ const CATEGORIES: Category[] = [
   { key: 'أذكار النوم', labelAr: 'أذكار النوم', labelEn: 'Sleep Adhkar', Icon: SleepIcon, color: 'bg-violet-950/40', borderColor: 'border-violet-700/20 hover:border-violet-600/40', iconBg: 'bg-violet-500/10' },
   { key: 'أذكار الأكل', labelAr: 'أذكار الأكل', labelEn: 'Eating Adhkar', Icon: FoodIcon, color: 'bg-teal-950/40', borderColor: 'border-teal-700/20 hover:border-teal-600/40', iconBg: 'bg-teal-500/10' },
   { key: 'أذكار السفر', labelAr: 'أذكار السفر', labelEn: 'Travel Adhkar', Icon: TravelIcon, color: 'bg-cyan-950/40', borderColor: 'border-cyan-700/20 hover:border-cyan-600/40', iconBg: 'bg-cyan-500/10' },
-  { key: 'أذكار عامة', labelAr: 'أذكار عامة', labelEn: 'General Adhkar', Icon: GeneralIcon, color: 'bg-amber-950/40', borderColor: 'border-amber-700/20 hover:border-amber-600/40', iconBg: 'bg-amber-500/10' },
-  { key: 'أذكار الدخول والخروج', labelAr: 'أذكار الدخول والخروج', labelEn: 'Enter/Leave', Icon: EnterLeaveIcon, color: 'bg-green-950/40', borderColor: 'border-green-700/20 hover:border-green-600/40', iconBg: 'bg-green-500/10' },
-  { key: 'أذكار الاستيقاظ', labelAr: 'أذكار الاستيقاظ', labelEn: 'Waking Up', Icon: WakeUpIcon, color: 'bg-orange-950/40', borderColor: 'border-orange-700/20 hover:border-orange-600/40', iconBg: 'bg-orange-500/10' },
-  { key: 'أذكار الحفظ والحماية', labelAr: 'أذكار الحفظ والحماية', labelEn: 'Protection', Icon: ProtectionIcon, color: 'bg-blue-950/40', borderColor: 'border-blue-700/20 hover:border-blue-600/40', iconBg: 'bg-blue-500/10' },
-  { key: 'أذكار الشكر والحمد', labelAr: 'أذكار الشكر والحمد', labelEn: 'Gratitude', Icon: GratitudeIcon, color: 'bg-pink-950/40', borderColor: 'border-pink-700/20 hover:border-pink-600/40', iconBg: 'bg-pink-500/10' },
 ];
 
 /* ─── Main Component ─────────────────────────────────── */
@@ -174,7 +111,7 @@ export function AzkarCategories() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showTasbeeh, setShowTasbeeh] = useState(false);
   const language = useSettingsStore((s) => s.language);
-  const t = TRANSLATIONS[language] as TranslationStrings;
+  const t = TRANSLATIONS[language];
 
   if (showTasbeeh) {
     return <TasbeehCounter onBack={() => setShowTasbeeh(false)} />;
@@ -192,8 +129,8 @@ export function AzkarCategories() {
         onClick={() => setShowTasbeeh(true)}
         className="w-full rounded-xl border border-zad-gold/30 bg-gradient-to-l from-zad-gold/10 to-zad-surface p-4 text-center transition-all hover:border-zad-gold/50"
       >
-        <p className="gold-text arabic-display text-lg font-bold">{t.tasbeeh || (language === 'ar' ? 'المسبحة الإلكترونية' : 'Digital Tasbeeh')}</p>
-        <p className="mt-1 text-xs text-text-muted">{t.tapToCount || (language === 'ar' ? 'اضغط للبدء' : 'Tap to count')}</p>
+        <p className="gold-text arabic-display text-lg font-bold">{t.tasbeeh}</p>
+        <p className="mt-1 text-xs text-text-muted">{t.tapToCount}</p>
       </motion.button>
 
       {/* Categories Grid */}

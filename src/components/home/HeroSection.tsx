@@ -1,9 +1,8 @@
 import { motion } from 'framer-motion';
 import { useSettingsStore } from '@/store/settings-store';
 import { TRANSLATIONS } from '@/lib/constants';
-import type { HijriDate } from '@/types';
 
-export function HeroSection({ hijriDate, locationName }: { hijriDate: HijriDate | null; locationName: string | null }) {
+export function HeroSection({ hijriDate, locationName }: { hijriDate: Record<string, any> | null; locationName: string | null }) {
   const language = useSettingsStore((s) => s.language);
   const t = TRANSLATIONS[language];
 
@@ -39,7 +38,7 @@ export function HeroSection({ hijriDate, locationName }: { hijriDate: HijriDate 
               </svg>
             </span>
             <span className="text-xs text-text-secondary">
-              {String(hijriDate.weekday?.ar || '')}, {String(hijriDate.day)} {String(hijriDate.monthAr)} {String(hijriDate.year)} هـ
+              {String((hijriDate as any).weekday?.ar || '')}، {String(hijriDate.day)} {String(hijriDate.monthAr)} {String(hijriDate.year)} هـ
             </span>
           </div>
         )}

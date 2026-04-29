@@ -23,7 +23,6 @@ import { useAppStore } from '@/store/app-store';
 import { useQuranAudio } from './useQuranAudio';
 import { ReciterSelector } from './ReciterSelector';
 import { TRANSLATIONS, RECITERS } from '@/lib/constants';
-import type { TranslationStrings } from '@/types';
 import { useQuranCache } from '@/store/quran-cache-store';
 
 interface PageAyahData {
@@ -112,7 +111,7 @@ export function MushafView() {
   const reciterId = useSettingsStore((s) => s.reciterId);
   const language = useSettingsStore((s) => s.language);
   const quranFontSize = useSettingsStore((s) => s.quranFontSize);
-  const t = TRANSLATIONS[language] as TranslationStrings;
+  const t = TRANSLATIONS[language];
 
   // Compute dynamic font size from settings (slider: 18–48)
   // Map slider value → rem: 18→0.95, 28→1.4, 48→2.4
@@ -140,7 +139,7 @@ export function MushafView() {
   const cacheSetPage = useQuranCache((s) => s.setPage);
 
   // Fetch current page — cache-first strategy
-  const { data, isLoading, isError, error, refetch } = useQuery<PageData>({
+  const { data, isLoading } = useQuery<PageData>({
     queryKey: ['quran-page', currentPage],
     queryFn: async () => {
       const res = await fetch(`/api/quran?action=page&pageNumber=${currentPage}`);
@@ -230,30 +229,6 @@ export function MushafView() {
     prefetchPage(currentPage - 1);
     prefetchPage(currentPage + 1);
   }, [currentPage, prefetchPage]);
-
-  // Auto-retry when connectivity restores
-  useEffect(() => {
-    const handleOnline = () => {
-      console.log('[MushafView] Online restored, retrying...');
-      refetch();
-    };
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, [refetch]);
-
-  // Find nearest cached page to current
-  const lastCachedPage = (() => {
-    if (cacheGetPage(currentPage)) return currentPage;
-    let lower = currentPage - 1;
-    let upper = currentPage + 1;
-    while (lower >= 1 || upper <= 604) {
-      if (lower >= 1 && cacheGetPage(lower)) return lower;
-      if (upper <= 604 && cacheGetPage(upper)) return upper;
-      lower--;
-      upper++;
-    }
-    return 1;
-  })();
 
   // Scroll to top on page change
   useEffect(() => {
@@ -492,9 +467,9 @@ export function MushafView() {
                 <button
                   onClick={() => { stop(); useAppStore.getState().setActiveTab('home'); }}
                   className="flex items-center justify-center rounded-xl p-2 text-amber-200/70 transition-colors hover:bg-amber-900/30 hover:text-amber-200"
-                  title={language === 'ar' ? '🏠 الرئيسية' : '🏠 Home'}
+                  title={language === 'ar' ? 'الرئيسية' : 'Home'}
                 >
-                  <Home size={18} className="text-amber-300" />
+                  <Home size={16} />
                 </button>
                 <button
                   onClick={() => setShowSurahIndex(true)}
@@ -517,11 +492,11 @@ export function MushafView() {
               >
                 <BookOpen size={14} className="text-amber-400" />
                 <span className="text-amber-100">
-                  {t.page || (language === 'ar' ? 'صفحة' : 'Page')} {currentPage} {t.of || (language === 'ar' ? 'من' : 'of')} 604
+                  {t.page} {currentPage} {t.of} 604
                 </span>
                 {currentJuz && (
                   <span className="rounded-lg bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-400">
-                    {t.juz || (language === 'ar' ? 'جزء' : 'Juz')} {currentJuz}
+                    {t.juz} {currentJuz}
                   </span>
                 )}
               </button>
@@ -622,31 +597,6 @@ export function MushafView() {
                 />
               </motion.div>
             </AnimatePresence>
-          ) : isError ? (
-            <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center gap-4 p-4 text-center">
-              <div className="rounded-2xl border border-amber-900/40 bg-[#1a1510] p-6 shadow-2xl max-w-sm">
-                <p className="arabic-display text-lg text-amber-100 mb-2">
-                  هذه الصفحة غير متوفرة بدون إنترنت
-                </p>
-                <p className="text-amber-200/70 text-sm mb-4">
-                  This page is not available offline
-                </p>
-                <div className="flex gap-2 justify-center">
-                  <button
-                    onClick={() => refetch()}
-                    className="flex h-10 items-center justify-center rounded-lg bg-amber-600 px-4 text-sm font-medium text-amber-950 transition-colors hover:bg-amber-500"
-                  >
-                    Retry
-                  </button>
-                  <button
-                    onClick={() => setPage(lastCachedPage)}
-                    className="flex h-10 items-center justify-center rounded-lg border border-amber-900/40 px-4 text-sm font-medium text-amber-200 transition-colors hover:bg-amber-900/20"
-                  >
-                    Go back
-                  </button>
-                </div>
-              </div>
-            </div>
           ) : null}
         </div>
       </div>
