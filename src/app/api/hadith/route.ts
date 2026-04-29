@@ -208,11 +208,12 @@ export async function GET() {
     const diff = now.getTime() - start.getTime();
     const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hadithIndex = dayOfYear % DAILY_HADITHS.length;
-    const dailyHadith = DAILY_HADITHS[hadithIndex];
+    const daily = DAILY_HADITHS[hadithIndex] || null;
 
     return NextResponse.json({
-      daily: dailyHadith,
+      daily,
       collections: HADITH_COLLECTIONS,
+      items: DAILY_HADITHS,
       totalHadiths: DAILY_HADITHS.length,
     });
   } catch (error) {
